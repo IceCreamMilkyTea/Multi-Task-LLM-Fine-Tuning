@@ -20,6 +20,21 @@ The primary metric is **average score across all three tasks**. Never sacrifice 
 
 ---
 
+## Error handling philosophy
+
+**When something fails, analyze the error. Do not add fallbacks.**
+
+- Read the full error message and traceback carefully
+- Identify the root cause before touching any code
+- Fix the actual problem — do not wrap it in try/except, add alternative code paths, or work around it with fallbacks
+- If an API call fails, understand *why* (wrong credentials? network? bad input?) before retrying
+- If a package is missing, install it — do not rewrite the code to avoid using it
+- Adding fallback code that masks errors is forbidden. It makes future debugging harder and hides real problems from the research log.
+
+If you genuinely cannot fix an error (e.g., Tinker API is down, credentials missing), log the exact error in `experiments.md` and stop. Do not continue with degraded or patched behavior.
+
+---
+
 ## Rules
 
 ### What you MUST NOT modify
@@ -75,6 +90,16 @@ exp_03_gsm7k_tulu5k_code5k_lr1e4_steps500_rank32
 ```bash
 python evaluation/train_and_publish.py --checkpoint_name <your_name>
 ```
+
+**Important:** Training is a step-by-step blocking API loop (not a batch job). Each training step is a round-trip to Tinker servers. Budget approximately 3–8 seconds per step:
+- 100 steps ≈ 5–15 min (for quick validation)
+- 500 steps ≈ 25–60 min (for real experiments)
+
+**If training fails mid-run** (network error, timeout, API error):
+- Check `evaluation/checkpoint_info.json` — if it exists, a checkpoint may have been saved before the crash
+- Note the failure in `experiments.md` with the error message
+- On next iteration, try again with fewer steps or smaller batch to confirm the setup works
+- Do NOT silently skip logging a failed experiment — negative results matter
 
 ### Step 4 — Quick eval (use --limit to save time and budget)
 ```bash
