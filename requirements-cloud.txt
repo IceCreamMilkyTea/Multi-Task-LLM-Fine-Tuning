@@ -1,0 +1,12 @@
+# Minimal dependencies for Claude Code Routines cloud environment
+# (No GPU/CUDA packages needed - training and inference run on Tinker servers)
+
+tinker==0.16.1
+tinker-cookbook @ git+https://github.com/thinking-machines-lab/tinker-cookbook.git@7cb5be22802a285558d30475a4dde1b86abe9c0c
+inspect-ai==0.3.170
+inspect-evals==0.3.106
+instruction-following-eval @ git+https://github.com/josejg/instruction_following_eval@0c495b2f95155e8b10acb919ae283bfb4d5be6e2
+openai==2.30.0
+numpy==2.4.4
+datasets==4.8.4
+huggingface-hub==1.8.0
