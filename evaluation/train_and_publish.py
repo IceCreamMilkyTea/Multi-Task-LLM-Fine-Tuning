@@ -105,6 +105,7 @@ def main():
     parser.add_argument("--tulu_samples", type=int, default=10000, help="Number of Tulu-3 samples")
     parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
     parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
+    parser.add_argument("--resume_from", type=str, default=None, help="Resume training from a save_state checkpoint path")
     args = parser.parse_args()
 
     # Setup
@@ -143,9 +144,13 @@ def main():
     print(f"  {len(all_data)} training examples prepared ({skipped} skipped)")
 
     # Create training client
-    print(f"Creating LoRA training client (rank={args.rank})...")
     sc = tinker.ServiceClient()
-    tc = sc.create_lora_training_client(base_model=MODEL, rank=args.rank)
+    if args.resume_from:
+        print(f"Resuming training from checkpoint: {args.resume_from}")
+        tc = sc.create_training_client_from_state(args.resume_from)
+    else:
+        print(f"Creating LoRA training client (rank={args.rank})...")
+        tc = sc.create_lora_training_client(base_model=MODEL, rank=args.rank)
     print("  Training client ready")
 
     # Train
