@@ -216,9 +216,18 @@ Decide: **keep** this configuration as the new baseline, or **discard** and reve
 
 ### Step 6 — Repeat immediately
 
-Go back to Step 1 and run the next experiment **without waiting**. Keep cycling until:
-- You have spent close to the per-session budget limit (see below), OR
+Go back to Step 1 and run the next experiment **without waiting**. Keep cycling until ALL of the following are true:
+- IFEval ≥ 47.3% (baseline 45.0% + 5%)
+- GSM8K ≥ 52.5% (baseline 50.0% + 5%)
+- HumanEval ≥ 31.5% (baseline 30.0% + 5%)
+
+Only once all three thresholds are met can you stop early. Until then, keep experimenting regardless of how many experiments have been run.
+
+Also stop if:
+- You have hit the per-session budget limit, OR
 - The session is about to end
+
+In those cases, stop cleanly: commit, push, and note in `experiments.md` which thresholds have and haven't been reached yet so the next session can pick up from there.
 
 **Do not stop after one or two experiments.** A daily session should produce as many experiments as the time and budget allow. Every idle minute is wasted research capacity.
 
