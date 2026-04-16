@@ -32,9 +32,11 @@ git pull origin main
 ```
 This syncs the latest `experiments.md` and `train_and_publish.py` from other sessions. If you skip this, you may duplicate an experiment that was already run.
 
-**Step 2 — Read `experiments.md` and find the best checkpoint:**
+**Step 2 — Read `experiments.md` carefully before proposing anything:**
 
-Look for the row with the highest average score that also has a `save_state` checkpoint path (format: `tinker://...train.../weights/...`, NOT `sampler_weights`). This is your starting point — prefer resuming from it over training from the base model, unless you're changing LoRA rank or trying a fundamentally different approach.
+1. Find the row with the highest average score — that's your current best checkpoint to resume from.
+2. Scan all rows marked `Keep? = No` — these are failed approaches. Do not repeat them. If a hypothesis looks similar to a past failure, skip it and think of something else.
+3. Look for patterns in what failed: if high LR failed twice, don't try it again. If increasing code data consistently hurt GSM8K, factor that in.
 
 If no `save_state` checkpoint exists yet, start from the base model and make sure to call `save_state()` at the end so future sessions can resume.
 
