@@ -100,12 +100,13 @@ def main():
     parser.add_argument("--rank", type=int, default=32, help="LoRA rank")
     parser.add_argument("--checkpoint_name", type=str, default="experiment", help="Checkpoint name")
     parser.add_argument("--no_publish", action="store_true", help="Skip publishing")
+    parser.add_argument("--resume_from", type=str, default=None,
+                        help="Resume training from a save_state checkpoint (tinker:// path)")
     # Dataset sizes
     parser.add_argument("--gsm8k_samples", type=int, default=7473, help="Number of GSM8K samples")
     parser.add_argument("--tulu_samples", type=int, default=10000, help="Number of Tulu-3 samples")
     parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
     parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
-    parser.add_argument("--resume_from", type=str, default=None, help="Resume training from a save_state checkpoint path")
     args = parser.parse_args()
 
     # Setup
