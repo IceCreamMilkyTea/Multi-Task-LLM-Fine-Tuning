@@ -1,5 +1,5 @@
 {
-  "checkpoint_path": "tinker://9f8a3aa8-25e0-54ce-8eed-dbdcac2d1762:train:0/sampler_weights/exp_0416_0249_bs4_lr1e4_steps1000_rank32",
+  "checkpoint_path": "tinker://3643b38a-21f2-5cea-8f60-46cc4336e07f:train:0/sampler_weights/exp_0416_1532_stage2_tulu_focus_lr5e5_steps300",
   "base_model": "meta-llama/Llama-3.2-3B",
   "settings": {
     "temperature": 0.0,
@@ -7,33 +7,33 @@
   },
   "ifeval": {
     "metrics": {
-      "google/IFEval/prompt_strict_acc": 0.18,
-      "google/IFEval/prompt_strict_stderr": 0.03861229196653691,
-      "google/IFEval/prompt_loose_acc": 0.25,
-      "google/IFEval/prompt_loose_stderr": 0.04351941398892446,
-      "google/IFEval/inst_strict_acc": 0.34355828220858897,
-      "google/IFEval/inst_strict_stderr": 0.03554807358664842,
-      "google/IFEval/inst_loose_acc": 0.3987730061349693,
-      "google/IFEval/inst_loose_stderr": 0.03755228683816911,
-      "google/IFEval/final_acc": 0.29308282208588954,
-      "google/IFEval/final_stderr": 0.034898606828598196
+      "google/IFEval/prompt_strict_acc": 0.19,
+      "google/IFEval/prompt_strict_stderr": 0.039427724440366255,
+      "google/IFEval/prompt_loose_acc": 0.21,
+      "google/IFEval/prompt_loose_stderr": 0.040936018074033236,
+      "google/IFEval/inst_strict_acc": 0.31901840490797545,
+      "google/IFEval/inst_strict_stderr": 0.034558154900102354,
+      "google/IFEval/inst_loose_acc": 0.34355828220858897,
+      "google/IFEval/inst_loose_stderr": 0.035278037098828985,
+      "google/IFEval/final_acc": 0.2656441717791411,
+      "google/IFEval/final_stderr": 0.03489770875250751
     },
     "samples": [
       {
         "id": 13,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 102,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 122,
@@ -61,11 +61,11 @@
       },
       {
         "id": 142,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 3,
-        "inst_loose": 3
+        "inst_strict": 2,
+        "inst_loose": 2
       },
       {
         "id": 143,
@@ -136,7 +136,7 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 2,
+        "inst_strict": 1,
         "inst_loose": 2
       },
       {
@@ -152,8 +152,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1072,
@@ -166,18 +166,18 @@
       {
         "id": 1075,
         "prompt_strict": false,
-        "prompt_loose": true,
+        "prompt_loose": false,
         "num_instructions": 1,
         "inst_strict": 0,
-        "inst_loose": 1
+        "inst_loose": 0
       },
       {
         "id": 1082,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 1,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1087,
@@ -189,19 +189,19 @@
       },
       {
         "id": 1092,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 1,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1094,
         "prompt_strict": false,
-        "prompt_loose": true,
+        "prompt_loose": false,
         "num_instructions": 1,
         "inst_strict": 0,
-        "inst_loose": 1
+        "inst_loose": 0
       },
       {
         "id": 1098,
@@ -232,16 +232,16 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 1,
+        "inst_strict": 0,
         "inst_loose": 0
       },
       {
         "id": 1127,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 2,
-        "inst_loose": 2
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1128,
@@ -269,11 +269,11 @@
       },
       {
         "id": 1131,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1132,
@@ -325,18 +325,18 @@
       },
       {
         "id": 1154,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1162,
-        "prompt_strict": false,
+        "prompt_strict": true,
         "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
+        "inst_strict": 1,
         "inst_loose": 1
       },
       {
@@ -345,15 +345,15 @@
         "prompt_loose": false,
         "num_instructions": 3,
         "inst_strict": 1,
-        "inst_loose": 2
+        "inst_loose": 1
       },
       {
         "id": 1180,
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1187,
@@ -368,8 +368,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1216,
@@ -381,10 +381,10 @@
       },
       {
         "id": 1217,
-        "prompt_strict": false,
+        "prompt_strict": true,
         "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
+        "inst_strict": 1,
         "inst_loose": 1
       },
       {
@@ -398,10 +398,10 @@
       {
         "id": 1220,
         "prompt_strict": false,
-        "prompt_loose": true,
+        "prompt_loose": false,
         "num_instructions": 1,
         "inst_strict": 0,
-        "inst_loose": 1
+        "inst_loose": 0
       },
       {
         "id": 1233,
@@ -480,7 +480,7 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 0,
+        "inst_strict": 1,
         "inst_loose": 1
       },
       {
@@ -494,10 +494,10 @@
       {
         "id": 1268,
         "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_loose": true,
         "num_instructions": 1,
         "inst_strict": 0,
-        "inst_loose": 0
+        "inst_loose": 1
       },
       {
         "id": 1281,
@@ -528,8 +528,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1305,
@@ -605,19 +605,19 @@
       },
       {
         "id": 1367,
-        "prompt_strict": false,
-        "prompt_loose": false,
-        "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
-      },
-      {
-        "id": 1372,
         "prompt_strict": true,
         "prompt_loose": true,
         "num_instructions": 1,
         "inst_strict": 1,
         "inst_loose": 1
+      },
+      {
+        "id": 1372,
+        "prompt_strict": false,
+        "prompt_loose": false,
+        "num_instructions": 1,
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1375,
@@ -640,32 +640,32 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 1,
+        "inst_strict": 2,
         "inst_loose": 2
       },
       {
         "id": 1381,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 1,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1389,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 2,
+        "inst_loose": 2
       },
       {
         "id": 1392,
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 2,
-        "inst_loose": 2
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1393,
@@ -677,11 +677,11 @@
       },
       {
         "id": 1402,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 2,
-        "inst_loose": 2
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1418,
@@ -718,18 +718,18 @@
       {
         "id": 1476,
         "prompt_strict": false,
-        "prompt_loose": true,
+        "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 2
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1477,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 1,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1480,
@@ -744,8 +744,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1498,
@@ -760,8 +760,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1512,
@@ -805,11 +805,11 @@
       },
       {
         "id": 1537,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1546,
@@ -817,19 +817,19 @@
         "prompt_loose": false,
         "num_instructions": 2,
         "inst_strict": 0,
-        "inst_loose": 0
+        "inst_loose": 1
       }
     ]
   },
   "gsm8k": {
     "metrics": {
-      "openai/gsm8k/accuracy": 0.32,
-      "openai/gsm8k/stderr": 0.04688261722621506
+      "openai/gsm8k/accuracy": 0.31,
+      "openai/gsm8k/stderr": 0.04648231987117317
     },
     "samples": [
       {
         "id": "gsm8k_013c2fba",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_044dddfd",
@@ -861,11 +861,11 @@
       },
       {
         "id": "gsm8k_1e666b4d",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_2466f3cc",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_2562a9ec",
@@ -877,7 +877,7 @@
       },
       {
         "id": "gsm8k_2c2c57ad",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_2d72b6d2",
@@ -885,7 +885,7 @@
       },
       {
         "id": "gsm8k_2e56ef42",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_311256b2",
@@ -897,11 +897,11 @@
       },
       {
         "id": "gsm8k_352af31b",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_37890226",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_3c3b1000",
@@ -925,7 +925,7 @@
       },
       {
         "id": "gsm8k_4b7e54d8",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_4cf24ddb",
@@ -933,7 +933,7 @@
       },
       {
         "id": "gsm8k_51c11102",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_584edb90",
@@ -957,7 +957,7 @@
       },
       {
         "id": "gsm8k_6b1c82fb",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_6e11451d",
@@ -981,7 +981,7 @@
       },
       {
         "id": "gsm8k_7ee94a4c",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_7f41423b",
@@ -993,7 +993,7 @@
       },
       {
         "id": "gsm8k_80005895",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_806b6177",
@@ -1013,15 +1013,15 @@
       },
       {
         "id": "gsm8k_8862fa78",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_89a1a40c",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_8ac51719",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_8baa8980",
@@ -1033,7 +1033,7 @@
       },
       {
         "id": "gsm8k_92032ea7",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_94948b14",
@@ -1049,7 +1049,7 @@
       },
       {
         "id": "gsm8k_9f12ad97",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_9f59b2c0",
@@ -1077,7 +1077,7 @@
       },
       {
         "id": "gsm8k_af9bef9a",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_afd80ed0",
@@ -1121,7 +1121,7 @@
       },
       {
         "id": "gsm8k_bfaa6fc5",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_c03c6e45",
@@ -1129,11 +1129,11 @@
       },
       {
         "id": "gsm8k_c1df56a6",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_c37fff6d",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_c695bff0",
@@ -1161,7 +1161,7 @@
       },
       {
         "id": "gsm8k_d5208707",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_d53b30e6",
@@ -1181,7 +1181,7 @@
       },
       {
         "id": "gsm8k_e7549bda",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_e7e2ab25",
@@ -1189,7 +1189,7 @@
       },
       {
         "id": "gsm8k_e927f88c",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_eb5fcd08",
@@ -1225,14 +1225,14 @@
       },
       {
         "id": "gsm8k_ff69618a",
-        "correct": false
+        "correct": true
       }
     ]
   },
   "humaneval": {
     "metrics": {
-      "openai/openai_humaneval/accuracy": 0.45,
-      "openai/openai_humaneval/stderr": 0.05
+      "openai/openai_humaneval/accuracy": 0.46,
+      "openai/openai_humaneval/stderr": 0.05009082659620331
     },
     "samples": [
       {
@@ -1261,7 +1261,7 @@
       },
       {
         "id": "HumanEval/14",
-        "correct": false
+        "correct": true
       },
       {
         "id": "HumanEval/15",
@@ -1413,7 +1413,7 @@
       },
       {
         "id": "HumanEval/49",
-        "correct": true
+        "correct": false
       },
       {
         "id": "HumanEval/5",
@@ -1425,7 +1425,7 @@
       },
       {
         "id": "HumanEval/51",
-        "correct": false
+        "correct": true
       },
       {
         "id": "HumanEval/52",
@@ -1517,7 +1517,7 @@
       },
       {
         "id": "HumanEval/72",
-        "correct": true
+        "correct": false
       },
       {
         "id": "HumanEval/73",
@@ -1561,7 +1561,7 @@
       },
       {
         "id": "HumanEval/82",
-        "correct": true
+        "correct": false
       },
       {
         "id": "HumanEval/83",
@@ -1605,7 +1605,7 @@
       },
       {
         "id": "HumanEval/92",
-        "correct": false
+        "correct": true
       },
       {
         "id": "HumanEval/93",
@@ -1621,7 +1621,7 @@
       },
       {
         "id": "HumanEval/96",
-        "correct": false
+        "correct": true
       },
       {
         "id": "HumanEval/97",
