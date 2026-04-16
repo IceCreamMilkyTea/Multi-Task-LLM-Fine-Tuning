@@ -2,16 +2,24 @@
 Train a model on multi-task data (GSM8K, Tulu-3 SFT, OpenCodeInstruct),
 save checkpoint, and publish it.
 
+Supports advanced methods:
+  --filter_quality     Enable data quality filtering
+  --curriculum         Enable curriculum learning (easy → hard)
+  --stage2_from        Resume from checkpoint for stage 2 (focused training)
+
 Usage:
     python evaluation/train_and_publish.py --checkpoint_name exp_01_baseline
     python evaluation/train_and_publish.py --num_steps 200 --checkpoint_name exp_02
+    python evaluation/train_and_publish.py --filter_quality --curriculum --checkpoint_name exp_03
     python evaluation/train_and_publish.py --no_publish
 """
 
 import argparse
+import ast
 import json
 import os
 import random
+import re
 
 import numpy as np
 import tinker
@@ -29,7 +37,184 @@ EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
 SEED = 42
 
 
-def load_gsm8k_conversations(num_samples=7473):
+# ============================================================
+# Data Quality Filtering
+# ============================================================
+
+def filter_gsm8k_quality(conversations):
+    """Filter GSM8K for clean step-by-step solutions.
+
+    Keeps examples that:
+    - Have a clear #### final answer marker
+    - Have at least 2 reasoning steps
+    - Are not excessively long (likely garbled)
+    - Have a numeric final answer
+    """
+    filtered = []
+    for convo in conversations:
+        answer = convo[1]["content"]
+        # Must have #### final answer marker
+        if "####" not in answer:
+            continue
+        # Extract final answer — must be numeric
+        parts = answer.split("####")
+        final_ans = parts[-1].strip()
+        if not re.search(r'\d', final_ans):
+            continue
+        # Must have at least 2 reasoning lines before the answer
+        reasoning = parts[0].strip()
+        lines = [l.strip() for l in reasoning.split("\n") if l.strip()]
+        if len(lines) < 2:
+            continue
+        # Not too long (likely garbled or overly complex for the model)
+        if len(answer) > 2000:
+            continue
+        # Not too short (likely missing reasoning)
+        if len(reasoning) < 50:
+            continue
+        filtered.append(convo)
+    return filtered
+
+
+def filter_code_quality(conversations):
+    """Filter code examples by syntax validity and quality.
+
+    Keeps examples that:
+    - Have substantial output (not trivially short)
+    - Are not excessively long (hard to learn from)
+    - Contain actual code patterns (def, class, import, etc.)
+    - For Python: have valid syntax (parseable by ast)
+    """
+    filtered = []
+    for convo in conversations:
+        output = convo[1]["content"]
+        prompt = convo[0]["content"]
+        # Check minimum length
+        if len(output) < 50:
+            continue
+        # Check maximum length
+        if len(output) > 4000:
+            continue
+        # Must contain code-like patterns
+        code_indicators = ["def ", "class ", "import ", "return ", "for ", "while ", "print("]
+        has_code = any(indicator in output for indicator in code_indicators)
+        if not has_code:
+            continue
+        # Try to extract and validate Python code blocks
+        code_blocks = re.findall(r'```(?:python)?\s*\n(.*?)```', output, re.DOTALL)
+        if code_blocks:
+            # Validate at least one code block parses
+            any_valid = False
+            for block in code_blocks:
+                try:
+                    ast.parse(block)
+                    any_valid = True
+                    break
+                except SyntaxError:
+                    continue
+            if not any_valid and len(code_blocks) > 0:
+                continue
+        filtered.append(convo)
+    return filtered
+
+
+def filter_tulu_quality(conversations):
+    """Filter Tulu conversations by quality.
+
+    Keeps examples that:
+    - Are primarily English (ASCII ratio >= 85%)
+    - Have at least one substantial assistant response (>= 100 chars)
+    - Are not excessively long (would be truncated at max_length)
+    - Are not trivially short
+    - Have proper alternating user/assistant structure
+    """
+    filtered = []
+    for convo in conversations:
+        # Must start with user and have proper structure
+        if not convo or convo[0]["role"] != "user":
+            continue
+        # English language check: high ASCII ratio in user message
+        user_text = convo[0]["content"]
+        ascii_chars = sum(1 for c in user_text if ord(c) < 128)
+        if ascii_chars / max(len(user_text), 1) < 0.85:
+            continue
+        # Must have at least one substantial assistant response
+        has_good_response = False
+        for msg in convo:
+            if msg["role"] == "assistant" and len(msg["content"]) >= 100:
+                has_good_response = True
+                break
+        if not has_good_response:
+            continue
+        # Total conversation should not be too long (hard to learn, gets truncated)
+        total_len = sum(len(msg["content"]) for msg in convo)
+        if total_len > 3000:
+            continue
+        # Filter out very short conversations
+        if total_len < 150:
+            continue
+        filtered.append(convo)
+    return filtered
+
+
+# ============================================================
+# Curriculum Learning
+# ============================================================
+
+def gsm8k_difficulty(convo):
+    """Score difficulty of a GSM8K problem. Lower = easier."""
+    answer = convo[1]["content"]
+    parts = answer.split("####")
+    reasoning = parts[0] if len(parts) > 1 else answer
+    # Count reasoning steps (non-empty lines)
+    steps = len([l for l in reasoning.split("\n") if l.strip()])
+    return steps
+
+
+def code_difficulty(convo):
+    """Score difficulty of a code problem. Lower = easier."""
+    return len(convo[1]["content"])
+
+
+def tulu_difficulty(convo):
+    """Score difficulty of a Tulu conversation. Lower = easier."""
+    return sum(len(msg["content"]) for msg in convo)
+
+
+def sort_curriculum(gsm8k_convos, code_convos, tulu_convos):
+    """Sort each dataset by difficulty (easy → hard), then interleave in curriculum order.
+
+    Creates 3 difficulty tiers (easy/medium/hard) and mixes within each tier.
+    This ensures the model sees easy examples from all tasks first.
+    """
+    # Sort each dataset by difficulty
+    gsm8k_sorted = sorted(gsm8k_convos, key=gsm8k_difficulty)
+    code_sorted = sorted(code_convos, key=code_difficulty)
+    tulu_sorted = sorted(tulu_convos, key=tulu_difficulty)
+
+    def split_thirds(lst):
+        n = len(lst)
+        return lst[:n//3], lst[n//3:2*n//3], lst[2*n//3:]
+
+    gsm8k_tiers = split_thirds(gsm8k_sorted)
+    code_tiers = split_thirds(code_sorted)
+    tulu_tiers = split_thirds(tulu_sorted)
+
+    # Build curriculum: easy tier (shuffled), then medium, then hard
+    all_data = []
+    for tier_idx in range(3):
+        tier_data = list(gsm8k_tiers[tier_idx]) + list(code_tiers[tier_idx]) + list(tulu_tiers[tier_idx])
+        random.shuffle(tier_data)
+        all_data.extend(tier_data)
+
+    return all_data
+
+
+# ============================================================
+# Data Loading (with optional filtering)
+# ============================================================
+
+def load_gsm8k_conversations(num_samples=7473, filter_quality=False):
     """Load GSM8K train split and format as conversations."""
     print(f"  Loading GSM8K (up to {num_samples} samples)...")
     ds = load_dataset("openai/gsm8k", "main", split="train")
@@ -45,17 +230,24 @@ def load_gsm8k_conversations(num_samples=7473):
             {"role": "assistant", "content": answer},
         ])
     print(f"    Loaded {len(conversations)} GSM8K conversations")
+
+    if filter_quality:
+        conversations = filter_gsm8k_quality(conversations)
+        print(f"    After quality filtering: {len(conversations)} GSM8K conversations")
+
     return conversations
 
 
-def load_tulu3_conversations(num_samples=5000):
+def load_tulu3_conversations(num_samples=5000, filter_quality=False):
     """Load Tulu-3 SFT mixture and format as conversations."""
-    print(f"  Loading Tulu-3 SFT mixture (up to {num_samples} samples)...")
+    # Load extra samples if filtering, since we'll discard some
+    load_count = int(num_samples * 1.5) if filter_quality else num_samples
+    print(f"  Loading Tulu-3 SFT mixture (up to {load_count} samples, target {num_samples})...")
     ds = load_dataset("allenai/tulu-3-sft-mixture", split="train", streaming=True)
 
     conversations = []
     for i, example in enumerate(ds):
-        if i >= num_samples:
+        if i >= load_count:
             break
         messages = example["messages"]
         # Filter: must have at least user + assistant
@@ -68,27 +260,61 @@ def load_tulu3_conversations(num_samples=5000):
                 conversations.append(convo)
 
     print(f"    Loaded {len(conversations)} Tulu-3 conversations")
+
+    if filter_quality:
+        conversations = filter_tulu_quality(conversations)
+        print(f"    After quality filtering: {len(conversations)} Tulu-3 conversations")
+        # Trim to target
+        if len(conversations) > num_samples:
+            conversations = conversations[:num_samples]
+
     return conversations
 
 
-def load_code_conversations(num_samples=5000):
-    """Load OpenCodeInstruct and format as conversations."""
-    print(f"  Loading OpenCodeInstruct (up to {num_samples} samples)...")
+def load_code_conversations(num_samples=5000, filter_quality=False):
+    """Load OpenCodeInstruct and format as conversations.
+
+    When filter_quality=True, uses the dataset's average_test_score field
+    to only keep examples where the generated code passes >= 80% of unit tests.
+    """
+    # Load extra samples if filtering, since we'll discard some
+    load_count = int(num_samples * 2) if filter_quality else num_samples
+    print(f"  Loading OpenCodeInstruct (up to {load_count} samples, target {num_samples})...")
     ds = load_dataset("nvidia/OpenCodeInstruct", split="train", streaming=True)
 
     conversations = []
     for i, example in enumerate(ds):
-        if i >= num_samples:
+        if i >= load_count:
             break
         input_text = example["input"]
         output_text = example["output"]
-        if input_text and output_text:
-            conversations.append([
-                {"role": "user", "content": input_text},
-                {"role": "assistant", "content": output_text},
-            ])
+        if not input_text or not output_text:
+            continue
+
+        # Quality filtering using test scores from the dataset
+        if filter_quality:
+            test_score_raw = example.get("average_test_score", "0")
+            try:
+                test_score = float(test_score_raw) if test_score_raw else 0.0
+            except (ValueError, TypeError):
+                test_score = 0.0
+            if test_score < 0.8:
+                continue
+            # Also length filter: not too short, not too long
+            if len(output_text) < 50 or len(output_text) > 4000:
+                continue
+
+        conversations.append([
+            {"role": "user", "content": input_text},
+            {"role": "assistant", "content": output_text},
+        ])
 
     print(f"    Loaded {len(conversations)} code conversations")
+
+    # Trim to target
+    if len(conversations) > num_samples:
+        conversations = conversations[:num_samples]
+
     return conversations
 
 
@@ -107,25 +333,78 @@ def main():
     parser.add_argument("--tulu_samples", type=int, default=10000, help="Number of Tulu-3 samples")
     parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
     parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
+    # Advanced methods
+    parser.add_argument("--filter_quality", action="store_true",
+                        help="Enable data quality filtering (removes low-quality samples)")
+    parser.add_argument("--curriculum", action="store_true",
+                        help="Enable curriculum learning (easy → hard ordering)")
+    parser.add_argument("--stage2_task", type=str, default=None, choices=["tulu", "gsm8k", "code"],
+                        help="Stage 2: train primarily on this task (use with --resume_from)")
+    parser.add_argument("--stage2_ratio", type=float, default=0.7,
+                        help="Stage 2: fraction of data from the focused task (default: 0.7)")
     args = parser.parse_args()
 
     # Setup
     print(f"Model: {MODEL}")
+    print(f"Advanced methods: filter_quality={args.filter_quality}, curriculum={args.curriculum}, "
+          f"stage2_task={args.stage2_task}")
     tokenizer = get_tokenizer(MODEL)
     renderer_name = model_info.get_recommended_renderer_name(MODEL)
     renderer = renderers.get_renderer(renderer_name, tokenizer)
     print(f"Renderer: {renderer_name}")
 
-    # Load datasets
+    # Load datasets (with optional quality filtering)
     print("Loading training data...")
-    gsm8k_convos = load_gsm8k_conversations(args.gsm8k_samples)
-    tulu_convos = load_tulu3_conversations(args.tulu_samples)
-    code_convos = load_code_conversations(args.code_samples)
+    gsm8k_convos = load_gsm8k_conversations(args.gsm8k_samples, filter_quality=args.filter_quality)
+    tulu_convos = load_tulu3_conversations(args.tulu_samples, filter_quality=args.filter_quality)
+    code_convos = load_code_conversations(args.code_samples, filter_quality=args.filter_quality)
 
-    # Combine all conversations
-    all_convos = gsm8k_convos + tulu_convos + code_convos
-    random.seed(SEED)
-    random.shuffle(all_convos)
+    # Multi-stage training: Stage 2 rebalances data toward the weakest task
+    if args.stage2_task:
+        total_target = len(gsm8k_convos) + len(tulu_convos) + len(code_convos)
+        focus_ratio = args.stage2_ratio
+        other_ratio = (1.0 - focus_ratio) / 2.0
+        focus_count = int(total_target * focus_ratio)
+        other_count = int(total_target * other_ratio)
+
+        task_map = {"gsm8k": gsm8k_convos, "tulu": tulu_convos, "code": code_convos}
+        task_names = ["gsm8k", "tulu", "code"]
+
+        for name in task_names:
+            if name == args.stage2_task:
+                # Upsample or keep the focus task
+                convos = task_map[name]
+                if len(convos) < focus_count:
+                    # Upsample by repeating
+                    repeats = (focus_count // len(convos)) + 1
+                    convos = (convos * repeats)[:focus_count]
+                else:
+                    random.seed(SEED)
+                    random.shuffle(convos)
+                    convos = convos[:focus_count]
+                task_map[name] = convos
+            else:
+                # Downsample other tasks
+                convos = task_map[name]
+                random.seed(SEED)
+                random.shuffle(convos)
+                task_map[name] = convos[:other_count]
+
+        gsm8k_convos = task_map["gsm8k"]
+        tulu_convos = task_map["tulu"]
+        code_convos = task_map["code"]
+        print(f"Stage 2 rebalanced (focus={args.stage2_task}, ratio={focus_ratio}): "
+              f"GSM8K={len(gsm8k_convos)}, Tulu={len(tulu_convos)}, Code={len(code_convos)}")
+
+    # Combine: curriculum (easy→hard) or random shuffle
+    if args.curriculum:
+        print("Applying curriculum learning (easy → hard)...")
+        all_convos = sort_curriculum(gsm8k_convos, code_convos, tulu_convos)
+    else:
+        all_convos = gsm8k_convos + tulu_convos + code_convos
+        random.seed(SEED)
+        random.shuffle(all_convos)
+
     print(f"Total conversations: {len(all_convos)} "
           f"(GSM8K: {len(gsm8k_convos)}, Tulu: {len(tulu_convos)}, Code: {len(code_convos)})")
 
@@ -213,6 +492,9 @@ def main():
             "tulu_samples": len(tulu_convos),
             "code_samples": len(code_convos),
             "total_samples": len(all_data),
+            "filter_quality": args.filter_quality,
+            "curriculum": args.curriculum,
+            "stage2_task": args.stage2_task,
         },
         "published": not args.no_publish,
     }
