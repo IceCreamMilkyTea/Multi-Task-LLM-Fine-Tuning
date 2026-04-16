@@ -68,6 +68,51 @@ If you genuinely cannot fix an error (e.g., Tinker API is down, credentials miss
   - Data formatting and conversation templates
   - Multi-stage training (e.g., SFT stage 1 → SFT stage 2 with different mix)
 
+### Reusing checkpoints (important for cost)
+
+Starting every experiment from the base model is expensive. Tinker supports saving and resuming training state:
+
+```python
+# Save training state (not just inference weights)
+save_result = training_client.save_state("checkpoint-name").result()
+checkpoint_path = save_result.path  # tinker://...
+
+# Resume training from a saved state
+training_client = service_client.create_training_client_from_state(checkpoint_path)
+```
+
+**When to resume vs. start fresh:**
+- Resume from best checkpoint when change is incremental: more steps, slightly different data mix, continued RL
+- Start from base model when changing rank (LoRA architecture), or trying a fundamentally different approach
+
+Always log the `save_state` path in `experiments.md` so future sessions can resume from it.
+
+Note: `save_weights_for_sampler()` / `save_weights_and_get_sampling_client()` is for inference only. Use `save_state()` to preserve the training state for resuming.
+
+### RL training (for extensions)
+
+After a good SFT baseline, RL can further improve math and code. Use `importance_sampling` loss with advantages:
+
+```python
+# Sample multiple responses per problem
+result = sampling_client.sample(prompt=..., sampling_params=..., num_samples=4).result()
+
+# Compute reward per response, then advantage = reward - mean_reward
+# Build Datum with advantages in loss_fn_inputs
+training_client.forward_backward(datums, "importance_sampling")
+```
+
+See `tinker_tutorial.ipynb` Part 3 for the full RL loop implementation.
+
+### Key hyperparameters to vary
+
+| Parameter | Flag | Values to try | Effect |
+|---|---|---|---|
+| Learning rate | `--lr` | `5e-5`, `1e-4`, `3e-4` | Too high → instability, too low → slow convergence |
+| LoRA rank | `--rank` | `8`, `16`, `32`, `64` | Higher rank = more capacity but slower + more expensive |
+| Steps | `--num_steps` | `100`, `300`, `500`, `1000` | More steps risks overtraining — always eval intermediate |
+| Batch size | `--batch_size` | `4`, `8`, `16` | Affects gradient noise and training stability |
+
 ### Budget constraint
 Each Tinker API account has **~$250 total budget**. 
 
@@ -138,8 +183,10 @@ python evaluation/eval_all.py \
 Append a row to `experiments.md` (create it if it doesn't exist):
 
 ```
-| exp_id | hypothesis | IFEval | GSM8K | HumanEval | Avg | Keep? | Notes |
+| exp_id | hypothesis | checkpoint_path | IFEval | GSM8K | HumanEval | Avg | Keep? | Notes |
 ```
+
+**Always log the full `tinker://...` checkpoint path.** This is critical — it lets future experiments continue training from a good checkpoint instead of starting from the base model every time.
 
 Then **always commit and push** before deciding anything:
 ```bash
