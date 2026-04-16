@@ -32,8 +32,10 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 16 | exp_0416_1413 | 300 | 4 | 5e-5 | 8 | 7473 | 10000 | 5000 | 17.0% | 22.0% | 39.0% | 26.0% | Discard | JOrG1 |
 | 17 | exp_0416_1436 | 300 | 4 | 5e-5 | 8 | 7469* | 8063* | 5000* | 12.0% | 18.0% | 39.0% | 23.0% | Discard | JOrG1 |
 | 18 | exp_0416_1441 | 1000 | 4 | 1e-4 | 32 | 7469* | 8063* | 5000* | 17.0% | 32.0% | 44.0% | 31.0% | Discard | JOrG1 |
+| 19 | exp_0416_1532 | 300 (resume #15) | 4 | 5e-5 | 32 | 3079 | 14372† | 3079 | 19.0% | 31.0% | 46.0% | 32.0% | Discard | JOrG1 |
 
 \* = quality-filtered data + curriculum learning
+† = Stage 2 multi-stage: 70% Tulu focus, resumed from best checkpoint (exp_0416_1145)
 
 ### Experiment Details
 
@@ -73,6 +75,8 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 
 **exp_0416_1441** — Quality filtering + curriculum learning with proven HPs (rank=32, lr=1e-4, 1000 steps). Same as best config but with filtered/sorted data. Avg 31.0% vs 36.1% best — within high-variance range for this config. Filtering + curriculum did not meaningfully improve results. checkpoint: `tinker://c6e1c198-bedd-5deb-aa1f-b488af4444b2:train:0/sampler_weights/exp_0416_1441_filtered_curriculum_lr1e4_steps1000_rank32` state: `tinker://c6e1c198-bedd-5deb-aa1f-b488af4444b2:train:0/weights/exp_0416_1441_filtered_curriculum_lr1e4_steps1000_rank32_state`
 
+**exp_0416_1532** — Multi-stage training: resumed from best checkpoint (exp_0416_1145) with 70% Tulu focus, 300 steps, lr=5e-5. IFEval improved slightly to 19% (+2pp vs non-resumed runs), HumanEval maintained at 46%. But overall avg still 32% — within noise. Stage 2 Tulu focus didn't breakthrough on IFEval. checkpoint: `tinker://3643b38a-21f2-5cea-8f60-46cc4336e07f:train:0/sampler_weights/exp_0416_1532_stage2_tulu_focus_lr5e5_steps300` state: `tinker://3643b38a-21f2-5cea-8f60-46cc4336e07f:train:0/weights/exp_0416_1532_stage2_tulu_focus_lr5e5_steps300_state`
+
 ## Analysis
 
 ### Key findings (consolidated from all 15 experiments):
@@ -94,6 +98,9 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 - 20k Tulu data (dilutes code/math, confirmed 2x)
 - Resuming from checkpoint with lr=3e-4 (destabilizes)
 - rank=8 + lr=5e-5 (too conservative, rank lacks capacity, all metrics worse)
+- rank=8 + filter + curriculum (even worse than rank=8 alone)
+- Data quality filtering + curriculum learning alone (doesn't improve over random; #18 within noise of #15)
+- Multi-stage Stage 2 Tulu focus from best checkpoint (+2pp IFEval, not significant; #19)
 
 ### Best checkpoint:
 - **exp_0416_1145**: IFEval 27.4%, GSM8K 35.0%, HumanEval 46.0%, Avg 36.1%
@@ -101,8 +108,16 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 - State: `tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32_state`
 
 ### Suggested next experiments:
-- **Two-stage training**: Stage 1 broad SFT (500 steps), Stage 2 IFEval-focused (200 steps with Tulu-only)
-- **Resume from best with lower LR (5e-5)**: Conservative fine-tuning for 200-500 more steps
-- **LoRA rank 64**: Current rank 32 may be capacity bottleneck
-- **Filtered Tulu data**: Use high-quality instruction-following subset instead of random streaming
-- **Scale to 8B model**: Once 3B config optimized, try Llama-3.1-8B
+- **LoRA rank 64**: Current rank 32 may be capacity bottleneck — try 64 for more learning capacity
+- **RL on math/code**: GRPO-style RL with reward=correct answer for GSM8K and tests pass for code
+- **Scale to 8B model**: The most impactful change — Llama-3.1-8B has fundamentally better capabilities
+- **Different data sources**: Try WizardLM, Orca, or other IFEval-specific training data instead of Tulu
+- **Longer max_length**: Current 1024 may truncate important training examples
+
+### Session JOrG1 findings (experiments 16-19):
+- rank=8 is fundamentally too small for multi-task LoRA (confirmed in 2 experiments)
+- Quality filtering (non-English Tulu, low-test-score code) does not improve over random sampling at rank=32
+- Curriculum learning (easy→hard) provides no measurable benefit
+- Multi-stage training (Stage 2 Tulu focus) gives marginal IFEval improvement (+2pp) but not significant
+- High variance remains the dominant factor: same config yields 31-36% avg across different runs
+- **Best approach remains**: rank=32, lr=1e-4, 1000 steps, 7473 GSM8K / 10k Tulu / 5k Code (exp_0416_1145)
