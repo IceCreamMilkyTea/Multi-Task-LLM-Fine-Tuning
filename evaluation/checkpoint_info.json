@@ -1,11 +1,12 @@
 {
-  "checkpoint_path": "tinker://58e5123f-62e3-5abc-8eb9-3e74038000ba:train:0/sampler_weights/exp_0416_0146_gsm7k_tulu10k_code5k_lr3e4_steps500_rank32",
+  "checkpoint_path": "tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/sampler_weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32",
+  "state_path": "tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32_state",
   "base_model": "meta-llama/Llama-3.2-3B",
   "renderer_name": "role_colon",
   "training": {
-    "num_steps": 500,
+    "num_steps": 1000,
     "batch_size": 4,
-    "learning_rate": 0.0003,
+    "learning_rate": 0.0001,
     "lora_rank": 32,
     "gsm8k_samples": 7473,
     "tulu_samples": 10000,
