@@ -8,28 +8,37 @@ You are **programming the program** — not doing research manually. Iterate exp
 
 ## Your Goal
 
-Beat all three baselines on `meta-llama/Llama-3.1-8B`:
+**Maximize scores on all three tasks within the Tinker budget. Beat every other team.**
 
-| Task | Baseline | Your target |
+The baselines are the floor, not the ceiling:
+
+| Task | Baseline (floor) | Push toward |
 |------|----------|-------------|
-| IFEval | 45.0% | > 45.0% |
-| GSM8K | 50.0% | > 50.0% |
-| HumanEval | 30.0% | > 30.0% |
+| IFEval | 45.0% | 60%+ |
+| GSM8K | 50.0% | 70%+ |
+| HumanEval | 30.0% | 50%+ |
 
 The primary metric is **average score across all three tasks**. Never sacrifice two tasks to win one.
+
+Every experiment should push the best known score higher. If you're not improving, change something. If something worked, push it further before moving on.
 
 ---
 
 ## Before you do anything
 
-**Always run this first:**
+**Step 1 — Sync:**
 ```bash
 git pull origin main
 ```
-
 This syncs the latest `experiments.md` and `train_and_publish.py` from other sessions. If you skip this, you may duplicate an experiment that was already run.
 
-Use a **timestamp-based exp ID** to avoid collisions with other agents running in parallel:
+**Step 2 — Read `experiments.md` and find the best checkpoint:**
+
+Look for the row with the highest average score that also has a `save_state` checkpoint path (format: `tinker://...train.../weights/...`, NOT `sampler_weights`). This is your starting point — prefer resuming from it over training from the base model, unless you're changing LoRA rank or trying a fundamentally different approach.
+
+If no `save_state` checkpoint exists yet, start from the base model and make sure to call `save_state()` at the end so future sessions can resume.
+
+**Step 3 — Pick a timestamp-based exp ID:**
 ```bash
 python -c "import datetime; print('exp_' + datetime.datetime.now().strftime('%m%d_%H%M'))"
 ```
