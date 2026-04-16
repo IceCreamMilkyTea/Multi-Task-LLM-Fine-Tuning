@@ -100,6 +100,8 @@ def main():
     parser.add_argument("--rank", type=int, default=32, help="LoRA rank")
     parser.add_argument("--checkpoint_name", type=str, default="experiment", help="Checkpoint name")
     parser.add_argument("--no_publish", action="store_true", help="Skip publishing")
+    parser.add_argument("--resume_from", type=str, default=None,
+                        help="Resume training from a save_state checkpoint (tinker:// path)")
     # Dataset sizes
     parser.add_argument("--gsm8k_samples", type=int, default=7473, help="Number of GSM8K samples")
     parser.add_argument("--tulu_samples", type=int, default=5000, help="Number of Tulu-3 samples")
@@ -143,9 +145,13 @@ def main():
     print(f"  {len(all_data)} training examples prepared ({skipped} skipped)")
 
     # Create training client
-    print(f"Creating LoRA training client (rank={args.rank})...")
     sc = tinker.ServiceClient()
-    tc = sc.create_lora_training_client(base_model=MODEL, rank=args.rank)
+    if args.resume_from:
+        print(f"Resuming training from: {args.resume_from}")
+        tc = sc.create_training_client_from_state(args.resume_from)
+    else:
+        print(f"Creating LoRA training client (rank={args.rank})...")
+        tc = sc.create_lora_training_client(base_model=MODEL, rank=args.rank)
     print("  Training client ready")
 
     # Train
@@ -171,8 +177,14 @@ def main():
         if (step + 1) % 10 == 0 or step == 0:
             print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}")
 
-    # Save checkpoint
-    print(f"\nSaving checkpoint '{args.checkpoint_name}'...")
+    # Save training state (for resuming future training)
+    print(f"\nSaving training state '{args.checkpoint_name}_state'...")
+    save_state_result = tc.save_state(f"{args.checkpoint_name}_state").result()
+    state_path = save_state_result.path
+    print(f"  Training state saved: {state_path}")
+
+    # Save inference checkpoint
+    print(f"Saving inference checkpoint '{args.checkpoint_name}'...")
     ckpt = tc.save_weights_for_sampler(name=args.checkpoint_name).result()
     checkpoint_path = ckpt.path
     print(f"  Checkpoint saved: {checkpoint_path}")
@@ -189,6 +201,7 @@ def main():
     # Save checkpoint info
     info = {
         "checkpoint_path": checkpoint_path,
+        "state_path": state_path,
         "base_model": MODEL,
         "renderer_name": renderer_name,
         "training": {
