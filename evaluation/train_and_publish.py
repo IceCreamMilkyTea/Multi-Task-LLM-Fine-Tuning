@@ -1,83 +1,110 @@
 """
-Train a model (minimal SFT), save checkpoint, and publish it.
-
-NOTE: This is a TOY EXAMPLE that trains for a few steps on dummy data
-to verify the full workflow end-to-end. You should replace the training
-data and training logic with your own implementation.
-
-TODO:
-  - Replace DEMO_CONVERSATIONS with your task-specific training data
-  - Tune hyperparameters (learning rate, batch size, number of steps, LoRA rank)
-  - Add validation / early stopping as needed
+Train a model on multi-task data (GSM8K, Tulu-3 SFT, OpenCodeInstruct),
+save checkpoint, and publish it.
 
 Usage:
-    python evaluation/train_and_publish.py
-    python evaluation/train_and_publish.py --num_steps 20
-    python evaluation/train_and_publish.py --no_publish   # skip publishing
+    python evaluation/train_and_publish.py --checkpoint_name exp_01_baseline
+    python evaluation/train_and_publish.py --num_steps 200 --checkpoint_name exp_02
+    python evaluation/train_and_publish.py --no_publish
 """
 
 import argparse
 import json
 import os
+import random
 
 import numpy as np
 import tinker
+from datasets import load_dataset
 from tinker import types
 from tinker_cookbook import model_info, renderers
 from tinker_cookbook.supervised.data import conversation_to_datum
 from tinker_cookbook.tokenizer_utils import get_tokenizer
 
 MODEL = "meta-llama/Llama-3.2-3B"
-# MODEL = "meta-llama/Llama-3.2-1B"    # Smaller, faster for development
 # MODEL = "meta-llama/Llama-3.1-8B"    # Recommended for final submission
 
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# TODO: TOY DATA, replace with your own training data
-DEMO_CONVERSATIONS = [
-    [
-        {"role": "user", "content": "What is 15 + 27?"},
-        {"role": "assistant", "content": "15 + 27 = 42"},
-    ],
-    [
-        {"role": "user", "content": "What is the capital of France?"},
-        {"role": "assistant", "content": "The capital of France is Paris."},
-    ],
-    [
-        {"role": "user", "content": "Write a Python function that returns the sum of two numbers."},
-        {"role": "assistant", "content": "def add(a, b):\n    return a + b"},
-    ],
-    [
-        {"role": "user", "content": "What is 8 * 7?"},
-        {"role": "assistant", "content": "8 * 7 = 56"},
-    ],
-    [
-        {"role": "user", "content": "Translate 'hello' to Spanish."},
-        {"role": "assistant", "content": "Hola"},
-    ],
-    [
-        {"role": "user", "content": "What is the square root of 144?"},
-        {"role": "assistant", "content": "The square root of 144 is 12."},
-    ],
-    [
-        {"role": "user", "content": "Write a Python function to check if a number is even."},
-        {"role": "assistant", "content": "def is_even(n):\n    return n % 2 == 0"},
-    ],
-    [
-        {"role": "user", "content": "List the first 5 prime numbers."},
-        {"role": "assistant", "content": "The first 5 prime numbers are: 2, 3, 5, 7, 11."},
-    ],
-]
+SEED = 42
+
+
+def load_gsm8k_conversations(num_samples=7473):
+    """Load GSM8K train split and format as conversations."""
+    print(f"  Loading GSM8K (up to {num_samples} samples)...")
+    ds = load_dataset("openai/gsm8k", "main", split="train")
+    if num_samples < len(ds):
+        ds = ds.shuffle(seed=SEED).select(range(num_samples))
+
+    conversations = []
+    for example in ds:
+        question = example["question"]
+        answer = example["answer"]
+        conversations.append([
+            {"role": "user", "content": question},
+            {"role": "assistant", "content": answer},
+        ])
+    print(f"    Loaded {len(conversations)} GSM8K conversations")
+    return conversations
+
+
+def load_tulu3_conversations(num_samples=5000):
+    """Load Tulu-3 SFT mixture and format as conversations."""
+    print(f"  Loading Tulu-3 SFT mixture (up to {num_samples} samples)...")
+    ds = load_dataset("allenai/tulu-3-sft-mixture", split="train", streaming=True)
+
+    conversations = []
+    for i, example in enumerate(ds):
+        if i >= num_samples:
+            break
+        messages = example["messages"]
+        # Filter: must have at least user + assistant
+        if len(messages) >= 2:
+            convo = []
+            for msg in messages:
+                if msg["role"] in ("user", "assistant"):
+                    convo.append({"role": msg["role"], "content": msg["content"]})
+            if convo and convo[0]["role"] == "user":
+                conversations.append(convo)
+
+    print(f"    Loaded {len(conversations)} Tulu-3 conversations")
+    return conversations
+
+
+def load_code_conversations(num_samples=5000):
+    """Load OpenCodeInstruct and format as conversations."""
+    print(f"  Loading OpenCodeInstruct (up to {num_samples} samples)...")
+    ds = load_dataset("nvidia/OpenCodeInstruct", split="train", streaming=True)
+
+    conversations = []
+    for i, example in enumerate(ds):
+        if i >= num_samples:
+            break
+        input_text = example["input"]
+        output_text = example["output"]
+        if input_text and output_text:
+            conversations.append([
+                {"role": "user", "content": input_text},
+                {"role": "assistant", "content": output_text},
+            ])
+
+    print(f"    Loaded {len(conversations)} code conversations")
+    return conversations
 
 
 def main():
     parser = argparse.ArgumentParser(description="Train, save, and publish a checkpoint")
-    parser.add_argument("--num_steps", type=int, default=10, help="Number of training steps")
+    parser.add_argument("--num_steps", type=int, default=200, help="Number of training steps")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--rank", type=int, default=32, help="LoRA rank")
-    parser.add_argument("--checkpoint_name", type=str, default="demo", help="Checkpoint name")
+    parser.add_argument("--checkpoint_name", type=str, default="experiment", help="Checkpoint name")
     parser.add_argument("--no_publish", action="store_true", help="Skip publishing")
+    # Dataset sizes
+    parser.add_argument("--gsm8k_samples", type=int, default=7473, help="Number of GSM8K samples")
+    parser.add_argument("--tulu_samples", type=int, default=5000, help="Number of Tulu-3 samples")
+    parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
+    parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
     args = parser.parse_args()
 
     # Setup
@@ -87,15 +114,33 @@ def main():
     renderer = renderers.get_renderer(renderer_name, tokenizer)
     print(f"Renderer: {renderer_name}")
 
-    # Prepare training data
+    # Load datasets
+    print("Loading training data...")
+    gsm8k_convos = load_gsm8k_conversations(args.gsm8k_samples)
+    tulu_convos = load_tulu3_conversations(args.tulu_samples)
+    code_convos = load_code_conversations(args.code_samples)
+
+    # Combine all conversations
+    all_convos = gsm8k_convos + tulu_convos + code_convos
+    random.seed(SEED)
+    random.shuffle(all_convos)
+    print(f"Total conversations: {len(all_convos)} "
+          f"(GSM8K: {len(gsm8k_convos)}, Tulu: {len(tulu_convos)}, Code: {len(code_convos)})")
+
+    # Convert to training data
     print("Preparing training data...")
     all_data = []
-    for convo in DEMO_CONVERSATIONS:
-        datum = conversation_to_datum(
-            convo, renderer, max_length=512, train_on_what=renderers.TrainOnWhat.ALL_ASSISTANT_MESSAGES
-        )
-        all_data.append(datum)
-    print(f"  {len(all_data)} training examples prepared")
+    skipped = 0
+    for convo in all_convos:
+        try:
+            datum = conversation_to_datum(
+                convo, renderer, max_length=args.max_length,
+                train_on_what=renderers.TrainOnWhat.ALL_ASSISTANT_MESSAGES
+            )
+            all_data.append(datum)
+        except Exception as e:
+            skipped += 1
+    print(f"  {len(all_data)} training examples prepared ({skipped} skipped)")
 
     # Create training client
     print(f"Creating LoRA training client (rank={args.rank})...")
@@ -108,9 +153,9 @@ def main():
     print(f"\nTraining for {args.num_steps} steps (batch_size={args.batch_size}, lr={args.lr})...")
 
     for step in range(args.num_steps):
-        # Cycle through data
-        start = (step * args.batch_size) % len(all_data)
-        batch = [all_data[i % len(all_data)] for i in range(start, start + args.batch_size)]
+        # Sample a random batch from all_data
+        batch = [all_data[i % len(all_data)] for i in
+                 random.sample(range(len(all_data)), min(args.batch_size, len(all_data)))]
 
         fwd_bwd_future = tc.forward_backward(batch, loss_fn="cross_entropy")
         optim_future = tc.optim_step(adam_params)
@@ -122,7 +167,9 @@ def main():
         logprobs = np.concatenate([o["logprobs"].tolist() for o in fwd_bwd_result.loss_fn_outputs])
         weights = np.concatenate([d.loss_fn_inputs["weights"].tolist() for d in batch])
         loss = -np.dot(logprobs, weights) / max(weights.sum(), 1)
-        print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}")
+
+        if (step + 1) % 10 == 0 or step == 0:
+            print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}")
 
     # Save checkpoint
     print(f"\nSaving checkpoint '{args.checkpoint_name}'...")
@@ -149,6 +196,10 @@ def main():
             "batch_size": args.batch_size,
             "learning_rate": args.lr,
             "lora_rank": args.rank,
+            "gsm8k_samples": len(gsm8k_convos),
+            "tulu_samples": len(tulu_convos),
+            "code_samples": len(code_convos),
+            "total_samples": len(all_data),
         },
         "published": not args.no_publish,
     }
@@ -157,7 +208,7 @@ def main():
         json.dump(info, f, indent=2)
     print(f"\nCheckpoint info saved to {info_path}")
     print(f"\nNext: evaluate your checkpoint with")
-    print(f"  python -m evaluation.eval_all --checkpoint_path \"{checkpoint_path}\" --base_model {MODEL}")
+    print(f"  python evaluation/eval_all.py --checkpoint_path \"{checkpoint_path}\" --base_model {MODEL}")
 
 
 if __name__ == "__main__":
