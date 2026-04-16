@@ -32,12 +32,12 @@ SEED = 42
 def load_gsm8k_conversations(num_samples=7473):
     """Load GSM8K train split and format as conversations."""
     print(f"  Loading GSM8K (up to {num_samples} samples)...")
-    ds = load_dataset("openai/gsm8k", "main", split="train")
-    if num_samples < len(ds):
-        ds = ds.shuffle(seed=SEED).select(range(num_samples))
+    ds = load_dataset("openai/gsm8k", "main", split="train", streaming=True)
 
     conversations = []
     for example in ds:
+        if len(conversations) >= num_samples:
+            break
         question = example["question"]
         answer = example["answer"]
         conversations.append([
@@ -171,8 +171,14 @@ def main():
         if (step + 1) % 10 == 0 or step == 0:
             print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}")
 
-    # Save checkpoint
-    print(f"\nSaving checkpoint '{args.checkpoint_name}'...")
+    # Save training state (for resuming in future experiments)
+    print(f"\nSaving training state '{args.checkpoint_name}'...")
+    save_state_result = tc.save_state(args.checkpoint_name).result()
+    save_state_path = save_state_result.path
+    print(f"  Training state saved: {save_state_path}")
+
+    # Save checkpoint for inference/eval
+    print(f"Saving inference checkpoint '{args.checkpoint_name}'...")
     ckpt = tc.save_weights_for_sampler(name=args.checkpoint_name).result()
     checkpoint_path = ckpt.path
     print(f"  Checkpoint saved: {checkpoint_path}")
@@ -189,6 +195,7 @@ def main():
     # Save checkpoint info
     info = {
         "checkpoint_path": checkpoint_path,
+        "save_state_path": save_state_path,
         "base_model": MODEL,
         "renderer_name": renderer_name,
         "training": {
