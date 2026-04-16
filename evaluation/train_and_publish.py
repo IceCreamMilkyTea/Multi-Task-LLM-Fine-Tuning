@@ -31,6 +31,8 @@ from tinker_cookbook.tokenizer_utils import get_tokenizer
 
 MODEL = "meta-llama/Llama-3.2-3B"
 # MODEL = "meta-llama/Llama-3.1-8B"    # Recommended for final submission
+MODEL_3B = "meta-llama/Llama-3.2-3B"
+MODEL_8B = "meta-llama/Llama-3.1-8B"
 
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -342,7 +344,14 @@ def main():
                         help="Stage 2: train primarily on this task (use with --resume_from)")
     parser.add_argument("--stage2_ratio", type=float, default=0.7,
                         help="Stage 2: fraction of data from the focused task (default: 0.7)")
+    parser.add_argument("--model", type=str, default=MODEL_3B,
+                        choices=[MODEL_3B, MODEL_8B],
+                        help="Base model: 3B (default) or 8B (for final runs)")
     args = parser.parse_args()
+
+    # Override MODEL if specified
+    global MODEL
+    MODEL = args.model
 
     # Setup
     print(f"Model: {MODEL}")
