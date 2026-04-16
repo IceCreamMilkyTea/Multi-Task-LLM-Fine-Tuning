@@ -94,7 +94,7 @@ def load_code_conversations(num_samples=5000):
 
 def main():
     parser = argparse.ArgumentParser(description="Train, save, and publish a checkpoint")
-    parser.add_argument("--num_steps", type=int, default=200, help="Number of training steps")
+    parser.add_argument("--num_steps", type=int, default=1000, help="Number of training steps")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--rank", type=int, default=32, help="LoRA rank")
@@ -102,9 +102,10 @@ def main():
     parser.add_argument("--no_publish", action="store_true", help="Skip publishing")
     # Dataset sizes
     parser.add_argument("--gsm8k_samples", type=int, default=7473, help="Number of GSM8K samples")
-    parser.add_argument("--tulu_samples", type=int, default=5000, help="Number of Tulu-3 samples")
+    parser.add_argument("--tulu_samples", type=int, default=10000, help="Number of Tulu-3 samples")
     parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
     parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
+    parser.add_argument("--resume_from", type=str, default=None, help="Resume training from a save_state checkpoint path")
     args = parser.parse_args()
 
     # Setup
@@ -143,9 +144,13 @@ def main():
     print(f"  {len(all_data)} training examples prepared ({skipped} skipped)")
 
     # Create training client
-    print(f"Creating LoRA training client (rank={args.rank})...")
     sc = tinker.ServiceClient()
-    tc = sc.create_lora_training_client(base_model=MODEL, rank=args.rank)
+    if args.resume_from:
+        print(f"Resuming training from checkpoint: {args.resume_from}")
+        tc = sc.create_training_client_from_state(args.resume_from)
+    else:
+        print(f"Creating LoRA training client (rank={args.rank})...")
+        tc = sc.create_lora_training_client(base_model=MODEL, rank=args.rank)
     print("  Training client ready")
 
     # Train
@@ -171,17 +176,17 @@ def main():
         if (step + 1) % 10 == 0 or step == 0:
             print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}")
 
-    # Save training state (for resuming in future experiments)
-    print(f"\nSaving training state '{args.checkpoint_name}'...")
-    save_state_result = tc.save_state(args.checkpoint_name).result()
-    save_state_path = save_state_result.path
-    print(f"  Training state saved: {save_state_path}")
-
-    # Save checkpoint for inference/eval
-    print(f"Saving inference checkpoint '{args.checkpoint_name}'...")
+    # Save checkpoint (inference weights)
+    print(f"\nSaving checkpoint '{args.checkpoint_name}'...")
     ckpt = tc.save_weights_for_sampler(name=args.checkpoint_name).result()
     checkpoint_path = ckpt.path
     print(f"  Checkpoint saved: {checkpoint_path}")
+
+    # Save training state (for resuming training later)
+    print(f"Saving training state '{args.checkpoint_name}_state'...")
+    state_result = tc.save_state(args.checkpoint_name + "_state").result()
+    state_path = state_result.path
+    print(f"  Training state saved: {state_path}")
 
     # Publish
     if not args.no_publish:
@@ -195,7 +200,7 @@ def main():
     # Save checkpoint info
     info = {
         "checkpoint_path": checkpoint_path,
-        "save_state_path": save_state_path,
+        "state_path": state_path,
         "base_model": MODEL,
         "renderer_name": renderer_name,
         "training": {

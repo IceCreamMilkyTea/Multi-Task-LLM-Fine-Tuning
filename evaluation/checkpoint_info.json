@@ -1,17 +1,17 @@
 {
-  "checkpoint_path": "tinker://670aed52-a66d-5cc8-b981-d91529de9c36:train:0/sampler_weights/exp_0416_0755_gsm7k_tulu20k_code5k_lr1e4_steps500_rank32",
-  "save_state_path": "tinker://670aed52-a66d-5cc8-b981-d91529de9c36:train:0/weights/exp_0416_0755_gsm7k_tulu20k_code5k_lr1e4_steps500_rank32",
+  "checkpoint_path": "tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/sampler_weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32",
+  "state_path": "tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32_state",
   "base_model": "meta-llama/Llama-3.2-3B",
   "renderer_name": "role_colon",
   "training": {
-    "num_steps": 500,
+    "num_steps": 1000,
     "batch_size": 4,
     "learning_rate": 0.0001,
     "lora_rank": 32,
     "gsm8k_samples": 7473,
-    "tulu_samples": 20000,
+    "tulu_samples": 10000,
     "code_samples": 5000,
-    "total_samples": 32473
+    "total_samples": 22473
   },
   "published": true
 }
