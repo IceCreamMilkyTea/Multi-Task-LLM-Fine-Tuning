@@ -94,15 +94,15 @@ def load_code_conversations(num_samples=5000):
 
 def main():
     parser = argparse.ArgumentParser(description="Train, save, and publish a checkpoint")
-    parser.add_argument("--num_steps", type=int, default=200, help="Number of training steps")
+    parser.add_argument("--num_steps", type=int, default=500, help="Number of training steps")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
-    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
     parser.add_argument("--rank", type=int, default=32, help="LoRA rank")
     parser.add_argument("--checkpoint_name", type=str, default="experiment", help="Checkpoint name")
     parser.add_argument("--no_publish", action="store_true", help="Skip publishing")
     # Dataset sizes
     parser.add_argument("--gsm8k_samples", type=int, default=7473, help="Number of GSM8K samples")
-    parser.add_argument("--tulu_samples", type=int, default=5000, help="Number of Tulu-3 samples")
+    parser.add_argument("--tulu_samples", type=int, default=10000, help="Number of Tulu-3 samples")
     parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
     parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
     args = parser.parse_args()
