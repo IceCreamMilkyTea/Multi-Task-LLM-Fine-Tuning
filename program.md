@@ -72,12 +72,16 @@ If you genuinely cannot fix an error (e.g., Tinker API is down, credentials miss
 - Any file not listed below
 
 ### What you CAN modify
-- `evaluation/train_and_publish.py` — this is your single file. Everything is fair game:
-  - Training datasets (which HuggingFace datasets to load, how many samples from each)
-  - Data mixing ratios between tasks
+- `evaluation/train_and_publish.py` — this is your single file. You are not just tuning numbers. You are implementing research ideas. Everything is fair game:
+  - Training datasets and data mixing ratios
   - Hyperparameters: `--lr`, `--num_steps`, `--batch_size`, `--rank`
   - Data formatting and conversation templates
-  - Multi-stage training (e.g., SFT stage 1 → SFT stage 2 with different mix)
+  - Multi-stage training pipelines
+  - Data filtering, selection, and quality scoring logic
+  - Data augmentation: generating new training examples programmatically
+  - Curriculum learning: ordering examples by difficulty
+  - RL training loop (see `tinker_tutorial.ipynb` Part 3)
+  - Any new Python code needed to implement these ideas
 
 ### Reusing checkpoints (important for cost)
 
@@ -232,17 +236,22 @@ After each experiment is committed and pushed, the loop continues regardless of 
 
 ## Suggested experiment sequence (starting point)
 
-You don't have to follow this exactly — this is a baseline research agenda. Improve it.
+You don't have to follow this order — use your judgment based on what experiments.md shows. Hyperparameter tuning is the floor. Aim to implement real research methods.
 
-1. **Baseline SFT** (confirm workflow): Small sample of all 3 datasets, equal mix, default HPs.
-2. **Data scale**: Increase total training samples, keep ratios equal.
-3. **Ratio sweep**: Vary task ratios (e.g., 50/25/25, 33/33/33, 25/50/25) to understand trade-offs.
-4. **LR sweep**: Try 5e-5, 1e-4, 3e-4.
-5. **LoRA rank**: Try rank 16, 32, 64.
-6. **Step count**: Evaluate intermediate checkpoints every N steps to find the sweet spot before overtraining.
-7. **Data quality**: Filter low-quality samples from Tulu and OpenCodeInstruct (length, deduplication).
-8. **Multi-stage**: Stage 1 broad SFT → Stage 2 targeted boost on weakest task.
-9. **Scale up**: Take the best 3B config and run on Llama-3.1-8B.
+### Phase 1 — Establish a working baseline
+1. **Baseline SFT**: All 3 datasets, equal mix, default HPs. Confirm the pipeline works end-to-end.
+2. **Ratio sweep**: Try 50/25/25, 33/33/33, 25/50/25 — understand which task benefits from more data.
+3. **HP tuning**: LR (5e-5, 1e-4, 3e-4), rank (16, 32, 64), steps — find a stable config.
+
+### Phase 2 — Implement real methods (this is where scores jump)
+4. **Data quality filtering**: Score and filter training samples. For GSM8K, keep only problems with clean step-by-step solutions. For code, filter by length and syntax validity. For Tulu, filter by response quality.
+5. **Curriculum learning**: Sort examples by difficulty (e.g., solution length as a proxy for math difficulty) and train easy → hard. Implement the sorting logic in `train_and_publish.py`.
+6. **Data augmentation**: For math, generate paraphrased versions of GSM8K problems using the model itself or template-based augmentation. More diverse math data = better generalization.
+7. **Multi-stage training**: Stage 1: broad SFT on all tasks. Stage 2: targeted fine-tuning on the weakest task using the Stage 1 checkpoint.
+8. **RL on math/code**: After a strong SFT baseline, apply GRPO-style RL on GSM8K (reward = correct final answer) and/or HumanEval (reward = tests pass). See `tinker_tutorial.ipynb` Part 3 for the RL loop. Always eval all 3 tasks after RL — it can hurt IFEval.
+
+### Phase 3 — Scale up
+9. **Scale to 8B**: Take the best-performing 3B method and run it on `meta-llama/Llama-3.1-8B` for the final submission.
 
 ---
 
