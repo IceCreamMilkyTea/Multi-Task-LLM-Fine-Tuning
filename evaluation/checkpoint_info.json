@@ -1,11 +1,11 @@
 {
-  "checkpoint_path": "tinker://e2cf73b2-066a-500a-bf73-6583069a26f0:train:0/sampler_weights/exp_02_gsm7k_tulu10k_code5k_lr1e4_steps500_rank32",
+  "checkpoint_path": "tinker://58e5123f-62e3-5abc-8eb9-3e74038000ba:train:0/sampler_weights/exp_0416_0146_gsm7k_tulu10k_code5k_lr3e4_steps500_rank32",
   "base_model": "meta-llama/Llama-3.2-3B",
   "renderer_name": "role_colon",
   "training": {
     "num_steps": 500,
     "batch_size": 4,
-    "learning_rate": 0.0001,
+    "learning_rate": 0.0003,
     "lora_rank": 32,
     "gsm8k_samples": 7473,
     "tulu_samples": 10000,
