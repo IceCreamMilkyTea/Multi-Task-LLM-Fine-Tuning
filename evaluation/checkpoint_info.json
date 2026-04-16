@@ -1,9 +1,10 @@
 {
-  "checkpoint_path": "tinker://e2cf73b2-066a-500a-bf73-6583069a26f0:train:0/sampler_weights/exp_02_gsm7k_tulu10k_code5k_lr1e4_steps500_rank32",
+  "checkpoint_path": "tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/sampler_weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32",
+  "state_path": "tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32_state",
   "base_model": "meta-llama/Llama-3.2-3B",
   "renderer_name": "role_colon",
   "training": {
-    "num_steps": 500,
+    "num_steps": 1000,
     "batch_size": 4,
     "learning_rate": 0.0001,
     "lora_rank": 32,
