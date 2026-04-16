@@ -20,6 +20,23 @@ The primary metric is **average score across all three tasks**. Never sacrifice 
 
 ---
 
+## Before you do anything
+
+**Always run this first:**
+```bash
+git pull origin main
+```
+
+This syncs the latest `experiments.md` and `train_and_publish.py` from other sessions. If you skip this, you may duplicate an experiment that was already run.
+
+Use a **timestamp-based exp ID** to avoid collisions with other agents running in parallel:
+```bash
+python -c "import datetime; print('exp_' + datetime.datetime.now().strftime('%m%d_%H%M'))"
+```
+e.g. `exp_0415_0130` — never use sequential numbers like `exp_04` which another agent may already have taken.
+
+---
+
 ## Error handling philosophy
 
 **When something fails, analyze the error. Do not add fallbacks.**
@@ -52,7 +69,13 @@ If you genuinely cannot fix an error (e.g., Tinker API is down, credentials miss
   - Multi-stage training (e.g., SFT stage 1 → SFT stage 2 with different mix)
 
 ### Budget constraint
-Each Tinker API account has **~$250 budget**. Use `meta-llama/Llama-3.2-3B` for most experiments. Only train `Llama-3.1-8B` when you have a configuration that looks promising on 3B.
+Each Tinker API account has **~$250 total budget**. 
+
+Per-session limit: **spend at most $30 per daily session** to leave room for future days.
+
+Use `meta-llama/Llama-3.2-3B` for all experiments until you have a clearly winning configuration. Only switch to `Llama-3.1-8B` for the final 1-2 runs.
+
+Before starting each experiment, estimate the cost (steps × batch_size × model_size) and skip if it would exceed the session budget.
 
 ---
 
@@ -110,7 +133,7 @@ python evaluation/eval_all.py \
 ```
 `--limit 100` gives you a rough signal in ~10 minutes. If scores look promising, run full eval.
 
-### Step 5 — Log and decide
+### Step 5 — Log, commit, and decide
 
 Append a row to `experiments.md` (create it if it doesn't exist):
 
@@ -118,11 +141,26 @@ Append a row to `experiments.md` (create it if it doesn't exist):
 | exp_id | hypothesis | IFEval | GSM8K | HumanEval | Avg | Keep? | Notes |
 ```
 
+Then **always commit and push** before deciding anything:
+```bash
+git add experiments.md evaluation/train_and_publish.py
+git commit -m "exp_<id>: <one-line summary of what changed and result>"
+git push
+```
+
+This ensures every experiment — successful or failed — is recorded in GitHub history, even if the next run crashes.
+
 Decide: **keep** this configuration as the new baseline, or **discard** and revert.
 
-### Step 6 — Repeat
+### Step 6 — Repeat immediately
 
-Go back to Step 1 with updated hypothesis based on what you observed.
+Go back to Step 1 and run the next experiment **without waiting**. Keep cycling until:
+- You have spent close to the per-session budget limit (see below), OR
+- The session is about to end
+
+**Do not stop after one or two experiments.** A daily session should produce as many experiments as the time and budget allow. Every idle minute is wasted research capacity.
+
+After each experiment is committed and pushed, the loop continues regardless of whether the last experiment succeeded or failed — failure is data too.
 
 ---
 
