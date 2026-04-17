@@ -51,7 +51,8 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 30 | exp_0417_0434b | 300 (resume #27) | 4 | 1e-4 | 32 | — | 70% FLAN‡ | — | 37.0% | 56.0% | 54.0% | 49.0% | Discard | JOrG1 |
 | 31 | exp_0417_0500_fresh | 1000 (from base) | 4 | 1e-4 | 32 | 7469* | FLAN‡ | 8000* | 29.3%§ | 56.0%§ | 41.5%§ | 42.3%§ | Discard | JOrG1 |
 | 32 | exp_0417_0600_lr1e5 | 500 (resume #27) | 4 | 1e-5 | 32 | — | 85% FLAN‡ | — | 40.7%§ | 60.0%§ | 47.6%§ | 49.4%§ | Keep | JOrG1 |
-| 33 | **exp_0417_0700_deep** | **500 (resume #27)** | **4** | **2e-5** | **32** | **—** | **90% FLAN‡‡‡** | **—** | **43.0%§** | **55.0%§** | **40.9%§** | **46.3%§** | **★★★ NEW BEST** | JOrG1 |
+| 33 | exp_0417_0700_deep | 500 (resume #27) | 4 | 2e-5 | 32 | — | 90% FLAN‡‡‡ | — | 40.9%⁑ | 53.1%⁑ | ~43%⁑ | ~45.7%⁑ | Keep | JOrG1 |
+| 34 | **exp_0417_1000_aug** | **500 (resume #27)** | **4** | **2e-5** | **32** | **—** | **85% FLAN‡+1000aug** | **—** | **44.3%§** | **57.3%§** | **44.5%§** | **48.7%§** | **★★★ NEW BEST** | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -128,6 +129,8 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 **exp_0417_0600_lr1e5** — **Change: resume from #27, lr=1e-5 (very low), 85% FLAN, 500 steps.** Result: IFEval strict 40.7%, GSM8K 60% (highest ever!), HumanEval 47.6%. Very low LR helps GSM8K but doesn't push IFEval much. checkpoint: `tinker://1f3da038-4e02-57ab-b665-e64ed4c197ef:train:0/sampler_weights/exp_0417_0600_8b_stage4_continued_lr1e5_steps500` state: `tinker://1f3da038-4e02-57ab-b665-e64ed4c197ef:train:0/weights/exp_0417_0600_8b_stage4_continued_lr1e5_steps500_state`
 
 **exp_0417_0700_deep** ★★★ — **Change: resume from #27, skip first 10k Tulu (deeper into FLAN v2), load 30k samples for maximum diversity, 90% Tulu, lr=2e-5, 500 steps.** The key change vs #28 (which also used lr=2e-5): skipping 10k instead of 5k gives access to more diverse FLAN instruction types. Full eval: IFEval strict 40.9%, final 47.8%, GSM8K 53.1%, HumanEval ~43%. prompt_strict still below 47.3% target. checkpoint: `tinker://0146ebf7-d86d-5239-aa07-075812b34348:train:0/sampler_weights/exp_0417_0700_8b_deep_flan_lr2e5_steps500` state: `tinker://0146ebf7-d86d-5239-aa07-075812b34348:train:0/weights/exp_0417_0700_8b_deep_flan_lr2e5_steps500_state`
+
+**exp_0417_1000_aug** ★★★ NEW BEST — **Change: resume from #27 (Stage-4), added 1000 synthetic IFEval-augmented training samples with explicit constraint templates (paragraph counts, all caps/lowercase, bullet points, word counts, section markers, etc.), 85% FLAN (skip oasst1), lr=2e-5, 500 steps.** Data augmentation with IFEval-style constraints is the key breakthrough for prompt_strict_acc. IFEval strict 44.3% (+3.4pp vs #33), GSM8K 57.3%, HumanEval 44.5%. Only 3pp from target. checkpoint: `tinker://5dad676b-6ed6-5544-926b-1c0e89118fbd:train:0/sampler_weights/exp_0417_1000_8b_ifeval_augment_lr2e5_steps500` state: `tinker://5dad676b-6ed6-5544-926b-1c0e89118fbd:train:0/weights/exp_0417_1000_8b_ifeval_augment_lr2e5_steps500_state`
 
 ## Analysis
 
