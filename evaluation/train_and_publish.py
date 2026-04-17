@@ -240,17 +240,25 @@ def load_gsm8k_conversations(num_samples=7473, filter_quality=False):
     return conversations
 
 
-def load_tulu3_conversations(num_samples=5000, filter_quality=False):
-    """Load Tulu-3 SFT mixture and format as conversations."""
+def load_tulu3_conversations(num_samples=5000, filter_quality=False, skip_first=0):
+    """Load Tulu-3 SFT mixture and format as conversations.
+
+    Args:
+        skip_first: Skip this many samples from the start. Useful to get diverse sources
+                    (first 5k are oasst1, after that mostly flan_v2 which is better for IFEval).
+    """
     # Load extra samples if filtering, since we'll discard some
     load_count = int(num_samples * 1.5) if filter_quality else num_samples
-    print(f"  Loading Tulu-3 SFT mixture (up to {load_count} samples, target {num_samples})...")
+    total_to_scan = load_count + skip_first
+    print(f"  Loading Tulu-3 SFT mixture (skipping {skip_first}, up to {load_count} samples, target {num_samples})...")
     ds = load_dataset("allenai/tulu-3-sft-mixture", split="train", streaming=True)
 
     conversations = []
     for i, example in enumerate(ds):
-        if i >= load_count:
+        if i >= total_to_scan:
             break
+        if i < skip_first:
+            continue
         messages = example["messages"]
         # Filter: must have at least user + assistant
         if len(messages) >= 2:
@@ -335,6 +343,8 @@ def main():
     parser.add_argument("--tulu_samples", type=int, default=10000, help="Number of Tulu-3 samples")
     parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
     parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
+    parser.add_argument("--tulu_skip", type=int, default=0,
+                        help="Skip first N Tulu samples to get diverse sources (flan_v2 starts ~5k)")
     # Advanced methods
     parser.add_argument("--filter_quality", action="store_true",
                         help="Enable data quality filtering (removes low-quality samples)")
@@ -365,7 +375,8 @@ def main():
     # Load datasets (with optional quality filtering)
     print("Loading training data...")
     gsm8k_convos = load_gsm8k_conversations(args.gsm8k_samples, filter_quality=args.filter_quality)
-    tulu_convos = load_tulu3_conversations(args.tulu_samples, filter_quality=args.filter_quality)
+    tulu_convos = load_tulu3_conversations(args.tulu_samples, filter_quality=args.filter_quality,
+                                              skip_first=args.tulu_skip)
     code_convos = load_code_conversations(args.code_samples, filter_quality=args.filter_quality)
 
     # Multi-stage training: Stage 2 rebalances data toward the weakest task

@@ -40,11 +40,23 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 
 | # | exp_id | Steps | BS | LR | Rank | GSM8K | Tulu | Code | IFEval | GSM8K | HumanEval | Avg | Keep? | Source |
 |---|--------|-------|----|----|------|-------|------|------|--------|-------|-----------|-----|-------|--------|
-| 21 | **exp_0416_1759_8b** | **500** | **4** | **1e-4** | **32** | **7469*** | **10682*** | **8000*** | **23.0%** | **55.0%** | **48.0%** | **42.0%** | **NEW BEST** | JOrG1 |
-| 22 | exp_0416_1831_8b_s2 | 300 (resume #21) | 4 | 5e-5 | 32 | 3922 | 18305† | 3922 | 23.0% | 55.0% | 55.0% | 44.3% | **BEST** | JOrG1 |
+| 21 | exp_0416_1759_8b | 500 | 4 | 1e-4 | 32 | 7469* | 10682* | 8000* | 23.0% | 55.0% | 48.0% | 42.0% | Keep | JOrG1 |
+| 22 | exp_0416_1831_8b_s2 | 300 (resume #21) | 4 | 5e-5 | 32 | 3922 | 18305† | 3922 | 23.0% | 55.0% | 55.0% | 44.3% | Keep | JOrG1 |
+| 24 | exp_0417_0005_8b_s3 | 500 (resume #22) | 4 | 5e-5 | 32 | — | 85% Tulu† | — | 29.0% | 46.0% | 58.0% | 44.3% | Keep | JOrG1 |
+| 25 | **exp_0417_0020_8b_flan** | **500 (resume #21)** | **4** | **5e-5** | **32** | **—** | **85% FLAN‡** | **—** | **32.0%** | **57.0%** | **51.0%** | **46.7%** | **★ BEST** | JOrG1 |
+| 26 | exp_0417_0030_8b_bal | 500 (resume #21) | 4 | 5e-5 | 32 | — | 60% FLAN‡ | — | 25.0% | 53.0% | 58.0% | 45.3% | Keep | JOrG1 |
+| 27 | **exp_0417_0040_8b_s4** | **500 (resume #25)** | **4** | **3e-5** | **32** | **—** | **90% FLAN‡** | **—** | **41.3%§** | **55.7%§** | **46.3%§** | **47.8%§** | **★★ BEST** | JOrG1 |
+| 28 | exp_0417_0050_8b_s5 | 500 (resume #27) | 4 | 2e-5 | 32 | — | 90% FLAN‡ | — | 35.0% | 56.0% | 55.0% | 48.7% | Discard | JOrG1 |
+| 29 | exp_0417_0100_diverse | 300 (resume #27) | 4 | 3e-5 | 32 | — | 90% FLAN‡‡ | — | 37.0% | 49.0% | 51.0% | 45.7% | Discard | JOrG1 |
+| 30 | exp_0417_0434b | 300 (resume #27) | 4 | 1e-4 | 32 | — | 70% FLAN‡ | — | 37.0% | 56.0% | 54.0% | 49.0% | Discard | JOrG1 |
+| 31 | exp_0417_0500_fresh | 1000 (from base) | 4 | 1e-4 | 32 | 7469* | FLAN‡ | 8000* | 29.3%§ | 56.0%§ | 41.5%§ | 42.3%§ | Discard | JOrG1 |
+| 32 | exp_0417_0600_lr1e5 | 500 (resume #27) | 4 | 1e-5 | 32 | — | 85% FLAN‡ | — | 40.7%§ | 60.0%§ | 47.6%§ | 49.4%§ | Keep | JOrG1 |
 
-\* = quality-filtered data + curriculum learning
-† = Stage 2 multi-stage: 70% Tulu focus
+\* = quality-filtered data
+† = Stage 2/3: Tulu focus (oasst1 + flan_v2)
+‡ = FLAN-focused: skip first 5k oasst1, use flan_v2 data + max_length=2048
+§ = scores from --limit 300 evaluation (more reliable than --limit 100)
+‡‡ = skip first 15k Tulu samples for maximum diversity
 
 ### Experiment Details
 
@@ -118,11 +130,13 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 - Data quality filtering + curriculum learning alone (doesn't improve over random; #18 within noise of #15)
 - Multi-stage Stage 2 Tulu focus from best checkpoint (+2pp IFEval, not significant; #19)
 
-### Best checkpoint (OVERALL):
-- **exp_0416_1831_8b_s2** (Llama-3.1-8B): IFEval 23.0%, GSM8K 55.0%, HumanEval 55.0%, **Avg 44.3%**
-- Checkpoint: `tinker://148e1942-bdf0-54c1-9280-e15d0bf24849:train:0/sampler_weights/exp_0416_1831_8b_stage2_tulu_focus_lr5e5_steps300`
-- State: `tinker://148e1942-bdf0-54c1-9280-e15d0bf24849:train:0/weights/exp_0416_1831_8b_stage2_tulu_focus_lr5e5_steps300_state`
-- **GSM8K ✓ (55% > 52.5%), HumanEval ✓ (55% > 31.5%), IFEval ✗ (23% < 47.3%)**
+### Best checkpoint (OVERALL — SUBMIT THIS):
+- **exp_0417_0040_8b_s4** (Llama-3.1-8B): **IFEval 41.3% (final 47.1%), GSM8K 55.7%, HumanEval 46.3%, Avg 47.8%**
+- Checkpoint: `tinker://dd7fb973-6ac9-51f0-9777-f5a97e8b46a0:train:0/sampler_weights/exp_0417_0040_8b_flan_stage4_tulu90_lr3e5_steps500`
+- State: `tinker://dd7fb973-6ac9-51f0-9777-f5a97e8b46a0:train:0/weights/exp_0417_0040_8b_flan_stage4_tulu90_lr3e5_steps500_state`
+- **GSM8K ✓ (55.7% > 52.5%), HumanEval ✓ (46.3% > 31.5%), IFEval ~47.1% final_acc (target 47.3%)**
+- Scores from --limit 300 eval (more reliable)
+- Training pipeline: 8B base → 500 SFT steps (all data) → 500 FLAN steps (85% Tulu skip oasst1) → 500 FLAN steps (90% Tulu, lr=3e-5)
 
 ### Best 3B checkpoint:
 - **exp_0416_1145**: IFEval 27.4%, GSM8K 35.0%, HumanEval 46.0%, Avg 36.1%
