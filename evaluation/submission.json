@@ -1,5 +1,5 @@
 {
-  "checkpoint_path": "tinker://9f8a3aa8-25e0-54ce-8eed-dbdcac2d1762:train:0/sampler_weights/exp_0416_0249_bs4_lr1e4_steps1000_rank32",
+  "checkpoint_path": "tinker://597d0b8c-861a-5b70-958e-842d360bdcc8:train:0/sampler_weights/exp_0416_1845_rl_gsm8k_3b",
   "base_model": "meta-llama/Llama-3.2-3B",
   "settings": {
     "temperature": 0.0,
@@ -7,25 +7,25 @@
   },
   "ifeval": {
     "metrics": {
-      "google/IFEval/prompt_strict_acc": 0.18,
-      "google/IFEval/prompt_strict_stderr": 0.03861229196653691,
+      "google/IFEval/prompt_strict_acc": 0.17,
+      "google/IFEval/prompt_strict_stderr": 0.03775251680686369,
       "google/IFEval/prompt_loose_acc": 0.25,
       "google/IFEval/prompt_loose_stderr": 0.04351941398892446,
-      "google/IFEval/inst_strict_acc": 0.34355828220858897,
-      "google/IFEval/inst_strict_stderr": 0.03554807358664842,
-      "google/IFEval/inst_loose_acc": 0.3987730061349693,
-      "google/IFEval/inst_loose_stderr": 0.03755228683816911,
-      "google/IFEval/final_acc": 0.29308282208588954,
-      "google/IFEval/final_stderr": 0.034898606828598196
+      "google/IFEval/inst_strict_acc": 0.31901840490797545,
+      "google/IFEval/inst_strict_stderr": 0.03425309504840027,
+      "google/IFEval/inst_loose_acc": 0.38650306748466257,
+      "google/IFEval/inst_loose_stderr": 0.036711896966621506,
+      "google/IFEval/final_acc": 0.28138036809815953,
+      "google/IFEval/final_stderr": 0.03415338894144302
     },
     "samples": [
       {
         "id": 13,
         "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_loose": true,
         "num_instructions": 1,
         "inst_strict": 0,
-        "inst_loose": 0
+        "inst_loose": 1
       },
       {
         "id": 102,
@@ -45,11 +45,11 @@
       },
       {
         "id": 127,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 2,
+        "inst_loose": 2
       },
       {
         "id": 136,
@@ -61,11 +61,11 @@
       },
       {
         "id": 142,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 3,
-        "inst_loose": 3
+        "inst_strict": 2,
+        "inst_loose": 2
       },
       {
         "id": 143,
@@ -88,8 +88,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 3,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1001,
@@ -233,15 +233,15 @@
         "prompt_loose": false,
         "num_instructions": 2,
         "inst_strict": 1,
-        "inst_loose": 0
+        "inst_loose": 1
       },
       {
         "id": 1127,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 2,
-        "inst_loose": 2
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1128,
@@ -257,7 +257,7 @@
         "prompt_loose": false,
         "num_instructions": 2,
         "inst_strict": 1,
-        "inst_loose": 0
+        "inst_loose": 1
       },
       {
         "id": 1130,
@@ -269,11 +269,11 @@
       },
       {
         "id": 1131,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1132,
@@ -296,8 +296,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1147,
@@ -345,15 +345,15 @@
         "prompt_loose": false,
         "num_instructions": 3,
         "inst_strict": 1,
-        "inst_loose": 2
+        "inst_loose": 1
       },
       {
         "id": 1180,
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1187,
@@ -381,10 +381,10 @@
       },
       {
         "id": 1217,
-        "prompt_strict": false,
+        "prompt_strict": true,
         "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
+        "inst_strict": 1,
         "inst_loose": 1
       },
       {
@@ -398,10 +398,10 @@
       {
         "id": 1220,
         "prompt_strict": false,
-        "prompt_loose": true,
+        "prompt_loose": false,
         "num_instructions": 1,
         "inst_strict": 0,
-        "inst_loose": 1
+        "inst_loose": 0
       },
       {
         "id": 1233,
@@ -461,11 +461,11 @@
       },
       {
         "id": 1258,
-        "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_strict": true,
+        "prompt_loose": true,
         "num_instructions": 1,
-        "inst_strict": 0,
-        "inst_loose": 0
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1259,
@@ -494,10 +494,10 @@
       {
         "id": 1268,
         "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_loose": true,
         "num_instructions": 1,
         "inst_strict": 0,
-        "inst_loose": 0
+        "inst_loose": 1
       },
       {
         "id": 1281,
@@ -533,11 +533,11 @@
       },
       {
         "id": 1305,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 2,
-        "inst_loose": 2
+        "inst_strict": 1,
+        "inst_loose": 1
       },
       {
         "id": 1307,
@@ -568,8 +568,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1332,
@@ -613,11 +613,11 @@
       },
       {
         "id": 1372,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 1,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1375,
@@ -645,19 +645,19 @@
       },
       {
         "id": 1381,
-        "prompt_strict": true,
-        "prompt_loose": true,
+        "prompt_strict": false,
+        "prompt_loose": false,
         "num_instructions": 1,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1389,
         "prompt_strict": false,
-        "prompt_loose": false,
+        "prompt_loose": true,
         "num_instructions": 2,
         "inst_strict": 1,
-        "inst_loose": 1
+        "inst_loose": 2
       },
       {
         "id": 1392,
@@ -760,8 +760,8 @@
         "prompt_strict": false,
         "prompt_loose": false,
         "num_instructions": 2,
-        "inst_strict": 1,
-        "inst_loose": 1
+        "inst_strict": 0,
+        "inst_loose": 0
       },
       {
         "id": 1512,
@@ -823,13 +823,13 @@
   },
   "gsm8k": {
     "metrics": {
-      "openai/gsm8k/accuracy": 0.32,
-      "openai/gsm8k/stderr": 0.04688261722621506
+      "openai/gsm8k/accuracy": 0.37,
+      "openai/gsm8k/stderr": 0.048523658709390974
     },
     "samples": [
       {
         "id": "gsm8k_013c2fba",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_044dddfd",
@@ -837,7 +837,7 @@
       },
       {
         "id": "gsm8k_082f84cc",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_0deb5903",
@@ -909,7 +909,7 @@
       },
       {
         "id": "gsm8k_3c472a74",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_3e39df41",
@@ -921,11 +921,11 @@
       },
       {
         "id": "gsm8k_4a891e58",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_4b7e54d8",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_4cf24ddb",
@@ -957,11 +957,11 @@
       },
       {
         "id": "gsm8k_6b1c82fb",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_6e11451d",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_71cd64ad",
@@ -1021,7 +1021,7 @@
       },
       {
         "id": "gsm8k_8ac51719",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_8baa8980",
@@ -1029,7 +1029,7 @@
       },
       {
         "id": "gsm8k_8d8dccee",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_92032ea7",
@@ -1053,7 +1053,7 @@
       },
       {
         "id": "gsm8k_9f59b2c0",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_a0eef4f2",
@@ -1077,7 +1077,7 @@
       },
       {
         "id": "gsm8k_af9bef9a",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_afd80ed0",
@@ -1117,11 +1117,11 @@
       },
       {
         "id": "gsm8k_bebacd2d",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_bfaa6fc5",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_c03c6e45",
@@ -1129,7 +1129,7 @@
       },
       {
         "id": "gsm8k_c1df56a6",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_c37fff6d",
@@ -1149,7 +1149,7 @@
       },
       {
         "id": "gsm8k_c9bbb74f",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_d49553a0",
@@ -1169,7 +1169,7 @@
       },
       {
         "id": "gsm8k_d77d5c95",
-        "correct": false
+        "correct": true
       },
       {
         "id": "gsm8k_db23d31a",
@@ -1209,7 +1209,7 @@
       },
       {
         "id": "gsm8k_f3f566cd",
-        "correct": true
+        "correct": false
       },
       {
         "id": "gsm8k_f4e225e3",
@@ -1231,8 +1231,8 @@
   },
   "humaneval": {
     "metrics": {
-      "openai/openai_humaneval/accuracy": 0.45,
-      "openai/openai_humaneval/stderr": 0.05
+      "openai/openai_humaneval/accuracy": 0.46,
+      "openai/openai_humaneval/stderr": 0.05009082659620331
     },
     "samples": [
       {
@@ -1561,7 +1561,7 @@
       },
       {
         "id": "HumanEval/82",
-        "correct": true
+        "correct": false
       },
       {
         "id": "HumanEval/83",
@@ -1617,11 +1617,11 @@
       },
       {
         "id": "HumanEval/95",
-        "correct": false
+        "correct": true
       },
       {
         "id": "HumanEval/96",
-        "correct": false
+        "correct": true
       },
       {
         "id": "HumanEval/97",

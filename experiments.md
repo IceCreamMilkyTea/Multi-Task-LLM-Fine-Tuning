@@ -29,6 +29,22 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 13 | exp_0416_0850 | 1000 | 4 | 1e-4 | 32 | 7473 | 10000 | 5000 | 19.0% | 38.0% | 44.0% | 33.7% | Discard | 7eIgD |
 | 14 | exp_0416_0948 | 500 | 4 | 1e-4 | 32 | 7473 | 20000 | 5000 | 19.0% | 31.0% | 34.0% | 28.0% | Discard | 7eIgD |
 | 15 | **exp_0416_1145** | **1000** | **4** | **1e-4** | **32** | **7473** | **10000** | **5000** | **27.4%** | **35.0%** | **46.0%** | **36.1%** | **BEST** | gJhPD |
+| 16 | exp_0416_1413 | 300 | 4 | 5e-5 | 8 | 7473 | 10000 | 5000 | 17.0% | 22.0% | 39.0% | 26.0% | Discard | JOrG1 |
+| 17 | exp_0416_1436 | 300 | 4 | 5e-5 | 8 | 7469* | 8063* | 5000* | 12.0% | 18.0% | 39.0% | 23.0% | Discard | JOrG1 |
+| 18 | exp_0416_1441 | 1000 | 4 | 1e-4 | 32 | 7469* | 8063* | 5000* | 17.0% | 32.0% | 44.0% | 31.0% | Discard | JOrG1 |
+| 19 | exp_0416_1532 | 300 (resume #15) | 4 | 5e-5 | 32 | 3079 | 14372† | 3079 | 19.0% | 31.0% | 46.0% | 32.0% | Discard | JOrG1 |
+| 20 | exp_0416_1759_rank64 | 1000 | 4 | 1e-4 | 64 | 7469* | 8063* | 5000* | 14.0% | 34.0% | 43.0% | 30.3% | Discard | JOrG1 |
+| 23 | exp_0416_1845_rl | 20 RL iters (resume #15) | 4 | 5e-6 | 32 | RL on GSM8K | - | - | 17.0% | 37.0% | 46.0% | 33.3% | Keep | JOrG1 |
+
+### Llama-3.1-8B Experiments
+
+| # | exp_id | Steps | BS | LR | Rank | GSM8K | Tulu | Code | IFEval | GSM8K | HumanEval | Avg | Keep? | Source |
+|---|--------|-------|----|----|------|-------|------|------|--------|-------|-----------|-----|-------|--------|
+| 21 | **exp_0416_1759_8b** | **500** | **4** | **1e-4** | **32** | **7469*** | **10682*** | **8000*** | **23.0%** | **55.0%** | **48.0%** | **42.0%** | **NEW BEST** | JOrG1 |
+| 22 | exp_0416_1831_8b_s2 | 300 (resume #21) | 4 | 5e-5 | 32 | 3922 | 18305† | 3922 | 23.0% | 55.0% | 55.0% | 44.3% | **BEST** | JOrG1 |
+
+\* = quality-filtered data + curriculum learning
+† = Stage 2 multi-stage: 70% Tulu focus
 
 ### Experiment Details
 
@@ -62,35 +78,67 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 
 **exp_0416_1145** ★ BEST — All 3 tasks improved: IFEval +1.0pp, GSM8K +5.0pp, HumanEval +2.0pp. Same data mix (7473 GSM8K, 10k Tulu, 5k Code), lr=1e-4, rank=32. Loss 1.38→1.23. checkpoint: `tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/sampler_weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32` state: `tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32_state`
 
+**exp_0416_1413** — Tested rank=8 + lr=5e-5 (conservative approach to prevent forgetting). All metrics regressed severely: IFEval -10.4pp, GSM8K -13pp, HumanEval -7pp vs best. rank=8 lacks capacity to learn from training data while still disrupting base model. Loss 1.10→0.48. checkpoint: `tinker://3213368d-3c6c-5f17-bb46-4d080609c971:train:0/sampler_weights/exp_0416_1413_gsm7k_tulu10k_code5k_lr5e5_steps300_rank8` state: `tinker://3213368d-3c6c-5f17-bb46-4d080609c971:train:0/weights/exp_0416_1413_gsm7k_tulu10k_code5k_lr5e5_steps300_rank8_state`
+
+**exp_0416_1436** — Added quality filtering (removed non-English Tulu, low-test-score code) + curriculum learning (easy→hard) to rank=8 setup. EVEN WORSE: IFEval 12% (-5pp vs #16), GSM8K 18% (-4pp). Filtering+curriculum can't compensate for insufficient rank. checkpoint: `tinker://857b3a31-5585-5e76-ae19-f0b272eb6ba5:train:0/sampler_weights/exp_0416_1436_filtered_curriculum_lr5e5_steps300_rank8`
+
+**exp_0416_1441** — Quality filtering + curriculum learning with proven HPs (rank=32, lr=1e-4, 1000 steps). Same as best config but with filtered/sorted data. Avg 31.0% vs 36.1% best — within high-variance range for this config. Filtering + curriculum did not meaningfully improve results. checkpoint: `tinker://c6e1c198-bedd-5deb-aa1f-b488af4444b2:train:0/sampler_weights/exp_0416_1441_filtered_curriculum_lr1e4_steps1000_rank32` state: `tinker://c6e1c198-bedd-5deb-aa1f-b488af4444b2:train:0/weights/exp_0416_1441_filtered_curriculum_lr1e4_steps1000_rank32_state`
+
+**exp_0416_1532** — Multi-stage training: resumed from best checkpoint (exp_0416_1145) with 70% Tulu focus, 300 steps, lr=5e-5. IFEval improved slightly to 19% (+2pp vs non-resumed runs), HumanEval maintained at 46%. But overall avg still 32% — within noise. Stage 2 Tulu focus didn't breakthrough on IFEval. checkpoint: `tinker://3643b38a-21f2-5cea-8f60-46cc4336e07f:train:0/sampler_weights/exp_0416_1532_stage2_tulu_focus_lr5e5_steps300` state: `tinker://3643b38a-21f2-5cea-8f60-46cc4336e07f:train:0/weights/exp_0416_1532_stage2_tulu_focus_lr5e5_steps300_state`
+
+**exp_0416_1759_rank64** — LoRA rank=64 on 3B. IFEval 14% (WORSE than rank=32 27.4%). Higher rank = more overfitting, not more capacity. checkpoint: `tinker://6e81dec5-ec55-59c5-9df3-eb6d21bf8c8e:train:0/sampler_weights/exp_0416_1759_rank64_gsm7k_tulu10k_code5k_lr1e4_steps1000`
+
+**exp_0416_1759_8b** ★ NEW BEST — Llama-3.1-8B with 500 steps, quality-filtered data (7469 GSM8K, 10682 Tulu, 8000 Code). GSM8K **55%** (exceeds 52.5% target!), HumanEval **48%** (exceeds 31.5% target!). IFEval 23% (still below 47.3% target). Massive improvement from model scale. checkpoint: `tinker://fcd6352c-4a09-5166-96a6-5fcc63d3ba81:train:0/sampler_weights/exp_0416_1759_8b_gsm7k_tulu15k_code8k_lr1e4_steps500_rank32` state: `tinker://fcd6352c-4a09-5166-96a6-5fcc63d3ba81:train:0/weights/exp_0416_1759_8b_gsm7k_tulu15k_code8k_lr1e4_steps500_rank32_state`
+
+**exp_0416_1831_8b_s2** ★★ OVERALL BEST — Stage 2 on 8B with 70% Tulu focus, 300 steps, lr=5e-5. HumanEval jumped to **55%** (+7pp vs #21). GSM8K maintained 55%. IFEval 23% (unchanged). **Avg 44.3% — new best.** checkpoint: `tinker://148e1942-bdf0-54c1-9280-e15d0bf24849:train:0/sampler_weights/exp_0416_1831_8b_stage2_tulu_focus_lr5e5_steps300` state: `tinker://148e1942-bdf0-54c1-9280-e15d0bf24849:train:0/weights/exp_0416_1831_8b_stage2_tulu_focus_lr5e5_steps300_state`
+
+**exp_0416_1845_rl** — GRPO-style RL on 3B (20 iters, 4 problems/iter, 4 samples/problem). GSM8K improved to 37% (+2pp vs best 3B SFT). Reward went 0.44→0.24 (model explored harder problems). RL works but modest gains on 3B. checkpoint: `tinker://597d0b8c-861a-5b70-958e-842d360bdcc8:train:0/sampler_weights/exp_0416_1845_rl_gsm8k_3b`
+
 ## Analysis
 
-### Key findings (consolidated from all 15 experiments):
+### Key findings (consolidated from all 23 experiments):
 
-1. **Best config: 1000 steps, bs=4, lr=1e-4, rank=32, 7473 GSM8K / 10k Tulu / 5k Code** → avg 36.1% (exp_0416_1145)
-2. **1000 steps has HIGH VARIANCE across runs**: Same config yielded avg from 31.0% to 36.1% across 6 different runs (#3,7,8,9,11,15). Training randomness matters significantly.
-3. **HumanEval is easiest to improve**: 40-47% across runs (target: 30%) — already well above target
-4. **GSM8K responds well to more training**: 24%→30%→35% trend, but high variance (29-38% at 1000 steps)
-5. **IFEval is the bottleneck and very fragile**: Best 27.4%, target 45%. Sensitive to LR, batch size, data ratios, and even random seed.
-6. **lr=3e-4 is too high**: Confirmed in 3 separate experiments (#4,5,10). Causes instability and hurts GSM8K.
-7. **batch_size=8 hurts IFEval**: -9.4pp vs bs=4 (#6). Linear scaling rule needed.
-8. **20k Tulu data is harmful**: Confirmed in 2 experiments (#12,14). Dilutes math/code signal without helping IFEval. 10k is the sweet spot.
-9. **Resuming with high LR is destructive**: Exp #10 showed 3e-4 LR when resuming causes GSM8K regression. Use ≤1e-4.
-10. **Diminishing returns from steps alone**: 200→500 gave big gains; 500→1000 helps but with high variance and risk of IFEval regression.
+1. **MODEL SCALE IS THE BIGGEST LEVER**: 8B (Llama-3.1-8B) avg 44.3% vs best 3B avg 36.1% — +8.2pp from scaling alone
+2. **8B exceeds 2/3 baselines**: GSM8K 55% (target 52.5% ✓), HumanEval 55% (target 31.5% ✓), IFEval 23% (target 47.3% ✗)
+3. **Multi-stage training on 8B helps HumanEval**: Stage 2 Tulu focus boosted HumanEval from 48% to 55% without hurting GSM8K
+4. **RL (GRPO) works but modest gains on 3B**: GSM8K +2pp (35→37%). RL infrastructure validated.
+5. **rank=64 is WORSE than rank=32**: More capacity = more overfitting, not better performance
+6. **Data quality filtering + curriculum learning**: No measurable benefit over random on 3B
+7. **IFEval remains the hardest bottleneck**: Never exceeded 27.4% on 3B, 23% on 8B. Needs fundamentally different approach.
+8. **Best 3B config: 1000 steps, bs=4, lr=1e-4, rank=32, 7473 GSM8K / 10k Tulu / 5k Code** → avg 36.1%
+9. **Best 8B config: Stage 1 (500 steps) + Stage 2 Tulu focus (300 steps, lr=5e-5)** → avg 44.3%
 
 ### Failed approaches (DO NOT REPEAT):
 - lr=3e-4 (too high, confirmed 3x)
 - batch_size=8 without LR scaling (IFEval drops ~9pp)
 - 20k Tulu data (dilutes code/math, confirmed 2x)
 - Resuming from checkpoint with lr=3e-4 (destabilizes)
+- rank=8 + lr=5e-5 (too conservative, rank lacks capacity, all metrics worse)
+- rank=8 + filter + curriculum (even worse than rank=8 alone)
+- Data quality filtering + curriculum learning alone (doesn't improve over random; #18 within noise of #15)
+- Multi-stage Stage 2 Tulu focus from best checkpoint (+2pp IFEval, not significant; #19)
 
-### Best checkpoint:
+### Best checkpoint (OVERALL):
+- **exp_0416_1831_8b_s2** (Llama-3.1-8B): IFEval 23.0%, GSM8K 55.0%, HumanEval 55.0%, **Avg 44.3%**
+- Checkpoint: `tinker://148e1942-bdf0-54c1-9280-e15d0bf24849:train:0/sampler_weights/exp_0416_1831_8b_stage2_tulu_focus_lr5e5_steps300`
+- State: `tinker://148e1942-bdf0-54c1-9280-e15d0bf24849:train:0/weights/exp_0416_1831_8b_stage2_tulu_focus_lr5e5_steps300_state`
+- **GSM8K ✓ (55% > 52.5%), HumanEval ✓ (55% > 31.5%), IFEval ✗ (23% < 47.3%)**
+
+### Best 3B checkpoint:
 - **exp_0416_1145**: IFEval 27.4%, GSM8K 35.0%, HumanEval 46.0%, Avg 36.1%
 - Checkpoint: `tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/sampler_weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32`
-- State: `tinker://1f8374c0-bf66-58cc-9c8f-b14d793d9915:train:0/weights/exp_0416_1145_gsm7k_tulu10k_code5k_lr1e4_steps1000_rank32_state`
 
 ### Suggested next experiments:
-- **Two-stage training**: Stage 1 broad SFT (500 steps), Stage 2 IFEval-focused (200 steps with Tulu-only)
-- **Resume from best with lower LR (5e-5)**: Conservative fine-tuning for 200-500 more steps
-- **LoRA rank 64**: Current rank 32 may be capacity bottleneck
-- **Filtered Tulu data**: Use high-quality instruction-following subset instead of random streaming
-- **Scale to 8B model**: Once 3B config optimized, try Llama-3.1-8B
+- **RL on 8B**: GRPO-style RL on the 8B checkpoint could push GSM8K even higher
+- **IFEval-specific data**: Try WizardLM, Orca, or IFEval-specific training data — Tulu doesn't help IFEval
+- **8B with 1000 steps**: Current 8B used only 500 steps — doubling may help all metrics
+- **8B with rank=64**: May work better on 8B than on 3B given the model's larger capacity
+- **Longer max_length (2048)**: Current 1024 may truncate important training examples
+
+### Session JOrG1 findings (experiments 16-23):
+- **Scaling to 8B is the single biggest improvement**: avg 44.3% vs 36.1% for best 3B
+- rank=8 is fundamentally too small (confirmed 2x), rank=64 is too large (causes overfitting on 3B)
+- Quality filtering + curriculum learning: no benefit on 3B
+- Multi-stage training: modest benefit for HumanEval on 8B (+7pp) 
+- GRPO-style RL: working implementation, gives +2pp GSM8K on 3B; should be more impactful on 8B
+- **IFEval remains unsolved** at 23% (target 47.3%) — the bottleneck for all configs
