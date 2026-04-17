@@ -50,6 +50,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 29 | exp_0417_0100_diverse | 300 (resume #27) | 4 | 3e-5 | 32 | — | 90% FLAN‡‡ | — | 37.0% | 49.0% | 51.0% | 45.7% | Discard | JOrG1 |
 | 30 | exp_0417_0434b | 300 (resume #27) | 4 | 1e-4 | 32 | — | 70% FLAN‡ | — | 37.0% | 56.0% | 54.0% | 49.0% | Discard | JOrG1 |
 | 31 | exp_0417_0500_fresh | 1000 (from base) | 4 | 1e-4 | 32 | 7469* | FLAN‡ | 8000* | 29.3%§ | 56.0%§ | 41.5%§ | 42.3%§ | Discard | JOrG1 |
+| 32 | exp_0417_0600_lr1e5 | 500 (resume #27) | 4 | 1e-5 | 32 | — | 85% FLAN‡ | — | 40.7%§ | 60.0%§ | 47.6%§ | 49.4%§ | Keep | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
