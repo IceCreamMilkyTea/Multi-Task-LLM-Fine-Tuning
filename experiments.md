@@ -40,11 +40,15 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 
 | # | exp_id | Steps | BS | LR | Rank | GSM8K | Tulu | Code | IFEval | GSM8K | HumanEval | Avg | Keep? | Source |
 |---|--------|-------|----|----|------|-------|------|------|--------|-------|-----------|-----|-------|--------|
-| 21 | **exp_0416_1759_8b** | **500** | **4** | **1e-4** | **32** | **7469*** | **10682*** | **8000*** | **23.0%** | **55.0%** | **48.0%** | **42.0%** | **NEW BEST** | JOrG1 |
-| 22 | exp_0416_1831_8b_s2 | 300 (resume #21) | 4 | 5e-5 | 32 | 3922 | 18305† | 3922 | 23.0% | 55.0% | 55.0% | 44.3% | **BEST** | JOrG1 |
+| 21 | exp_0416_1759_8b | 500 | 4 | 1e-4 | 32 | 7469* | 10682* | 8000* | 23.0% | 55.0% | 48.0% | 42.0% | Keep | JOrG1 |
+| 22 | exp_0416_1831_8b_s2 | 300 (resume #21) | 4 | 5e-5 | 32 | 3922 | 18305† | 3922 | 23.0% | 55.0% | 55.0% | 44.3% | Keep | JOrG1 |
+| 24 | exp_0417_0005_8b_s3 | 500 (resume #22) | 4 | 5e-5 | 32 | — | 85% Tulu† | — | 29.0% | 46.0% | 58.0% | 44.3% | Keep | JOrG1 |
+| 25 | **exp_0417_0020_8b_flan** | **500 (resume #21)** | **4** | **5e-5** | **32** | **—** | **85% FLAN‡** | **—** | **32.0%** | **57.0%** | **51.0%** | **46.7%** | **★ BEST** | JOrG1 |
+| 26 | exp_0417_0030_8b_bal | 500 (resume #21) | 4 | 5e-5 | 32 | — | 60% FLAN‡ | — | 25.0% | 53.0% | 58.0% | 45.3% | Keep | JOrG1 |
 
-\* = quality-filtered data + curriculum learning
-† = Stage 2 multi-stage: 70% Tulu focus
+\* = quality-filtered data
+† = Stage 2/3: Tulu focus (oasst1 + flan_v2)
+‡ = FLAN-focused: skip first 5k oasst1, use flan_v2 data + max_length=2048
 
 ### Experiment Details
 
