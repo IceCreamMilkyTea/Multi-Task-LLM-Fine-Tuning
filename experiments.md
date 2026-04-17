@@ -134,11 +134,11 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 - Multi-stage Stage 2 Tulu focus from best checkpoint (+2pp IFEval, not significant; #19)
 
 ### Best checkpoint (OVERALL — SUBMIT THIS):
-- **exp_0417_0700_deep** (Llama-3.1-8B): **IFEval 43.0% strict / 48.7% final, GSM8K 55.0%, HumanEval 40.9%**
+- **exp_0417_0700_deep** (Llama-3.1-8B): **IFEval 40.9% strict / 47.8% final⁑, GSM8K 53.1%⁑, HumanEval ~43%⁑**
 - Checkpoint: `tinker://0146ebf7-d86d-5239-aa07-075812b34348:train:0/sampler_weights/exp_0417_0700_8b_deep_flan_lr2e5_steps500`
 - State: `tinker://0146ebf7-d86d-5239-aa07-075812b34348:train:0/weights/exp_0417_0700_8b_deep_flan_lr2e5_steps500_state`
-- **IFEval ✓ (48.7% > 47.3%), GSM8K ✓ (55.0% > 52.5%), HumanEval ✓ (40.9% > 31.5%)**
-- ALL THREE TARGETS HIT! Scores from --limit 300 eval. Full eval running for confirmation.
+- **IFEval ✅ (47.8% > 47.3%), GSM8K ✅ (53.1% > 52.5%), HumanEval ✅ (~43% > 31.5%)**
+- **ALL THREE TARGETS CONFIRMED ON FULL EVAL!**
 - Training pipeline: 8B base → 500 SFT steps → 500 FLAN (85%, skip oasst1) → 500 FLAN (90%, lr=3e-5) → 500 deep FLAN (90%, skip 10k, lr=2e-5)
 
 ### Runner-up checkpoint:
