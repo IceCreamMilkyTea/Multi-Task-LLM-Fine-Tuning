@@ -235,14 +235,18 @@ def main():
                 sample_rewards.append(reward)
                 sample_data.append((response_tokens, response_logprobs))
 
-            # Compute advantages
+            # Compute advantages — use reward-centered approach
+            # For binary rewards: use reward directly as advantage (1→positive, 0→negative)
+            # This ensures learning even when all samples agree
             mean_r = np.mean(sample_rewards)
-            std_r = np.std(sample_rewards) + 1e-8
-            advantages = [(r - mean_r) / std_r for r in sample_rewards]
-
-            if np.std(sample_rewards) < 1e-6:
-                iter_rewards.extend(sample_rewards)
-                continue
+            if np.std(sample_rewards) > 1e-6:
+                # Normal case: normalize within group
+                std_r = np.std(sample_rewards)
+                advantages = [(r - mean_r) / std_r for r in sample_rewards]
+            else:
+                # All same: use (reward - 0.5) as advantage so model learns
+                # from both successes (advantage > 0) and failures (advantage < 0)
+                advantages = [r - 0.5 for r in sample_rewards]
 
             iter_rewards.extend(sample_rewards)
 
