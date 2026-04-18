@@ -55,6 +55,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 34 | **exp_0417_1000_aug** | **500 (resume #27)** | **4** | **2e-5** | **32** | **—** | **85% FLAN‡+1000aug** | **—** | **44.3%§** | **57.3%§** | **44.5%§** | **48.7%§** | **★★★ NEW BEST** | JOrG1 |
 | 35 | exp_0417_0800 | 1000 (resume #27) | 4 | 2e-5 | 32 | — | 90% FLAN‡ | — | 40.7%§ | 57.3%§ | ~42%§ | ~46.7%§ | Discard | JOrG1 |
 | 36 | exp_0417_1100 | 500 (resume #34) | 4 | 1e-5 | 32 | — | 85% FLAN‡+2000aug | — | 44.3%§ | 57.3%§ | ~61%§ | ~54.2%§ | Discard | JOrG1 |
+| 37 | exp_0418_0240_aug | 500 (resume #27) | 4 | 2e-5 | 32 | — | 85% FLAN‡+2000aug_v2 | — | 39.7%§ | 58.0%§ | 42.1%§ | 46.6%§ | Discard | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -137,6 +138,8 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 **exp_0417_0800** (#35) — **Change: resume from #27 (Stage-4), 1000 steps (double the usual 500), 90% FLAN, lr=2e-5. No augmented data.** Hypothesis: longer training helps IFEval. Result: IFEval strict 40.7% — NOT better than #34 (44.3%). More steps alone doesn't help; augmented data is the key. checkpoint: `tinker://096e76ae-743a-54f6-bd91-b741dfc82ba9:train:0/sampler_weights/exp_0417_0800_8b_deeper_flan_lr2e5_steps1000`
 
 **exp_0417_1100** (#36) — **Change: resume from #34 (best augment), added 2000 IFEval-augmented samples (double), lr=1e-5 (lower), 500 steps.** Hypothesis: more augmented data + lower LR continues improvement. Result: IFEval strict 44.3% — SAME as #34. lr=1e-5 too low to learn further, and template-based augmented responses were too simple/repetitive. Need higher quality augmented data. checkpoint: `tinker://3f068e13-f75c-5250-8155-95e040bb436d:train:0/sampler_weights/exp_0417_1100_8b_ifeval_augment2_lr1e5_steps500`
+
+**exp_0418_0240_aug** (#37) — **Change: resume from #27, IMPROVED augmentation: replaced template responses with full realistic 200+ word responses on 8 diverse topics, 16 constraint types, 2000 samples, lr=2e-5, 500 steps.** Hypothesis: realistic responses would teach the model to follow constraints while generating real content. Result: IFEval strict 39.7% — WORSE than #34's simple templates (44.3%). Realistic long responses confused the model; short, explicit constraint-response pairs work better. checkpoint: `tinker://d17a9162-dc9c-5b3a-ae85-6323ecbc5dc7:train:0/sampler_weights/exp_0418_0240_8b_improved_augment_lr2e5_steps500`
 
 ## Analysis
 

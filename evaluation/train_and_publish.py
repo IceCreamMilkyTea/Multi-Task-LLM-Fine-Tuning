@@ -182,6 +182,41 @@ IFEVAL_CONSTRAINT_TEMPLATES = [
     ("Give two different responses. Responses and only responses should be separated by 6 asterisks: ******.", "two_responses", [None]),
 ]
 
+IFEVAL_SIMPLE_TEMPLATES = [
+    ("Your response must contain exactly {n} paragraphs. Paragraphs are separated by two newlines.",
+     lambda n: "\n\n".join([f"This is paragraph {i+1} about the topic with some detailed information and explanation." for i in range(n)]), [2, 3, 4, 5]),
+    ("Your entire response should be in English, and in all capital letters.",
+     lambda _: "THIS IS MY COMPLETE RESPONSE IN ALL CAPITAL LETTERS ABOUT THE TOPIC. I AM FOLLOWING THE INSTRUCTION TO WRITE EVERYTHING IN UPPERCASE.", [None]),
+    ("Your entire response should be in English, and in all lowercase letters. No capital letters are allowed.",
+     lambda _: "this is my complete response in all lowercase letters about the topic. i am following the instruction to write everything in lowercase without any capital letters.", [None]),
+    ("Include exactly {n} bullet points in your response. Use the markdown bullet points such as: * This is a bullet point.",
+     lambda n: "\n".join([f"* This is bullet point number {i+1} with relevant information about the topic." for i in range(n)]), [3, 4, 5, 6]),
+    ("Your response must contain at least {n} sentences.",
+     lambda n: " ".join([f"This is sentence number {i+1} providing information about the topic." for i in range(n)]), [3, 5, 8, 10]),
+    ("Wrap your entire response with double quotation marks.",
+     lambda _: '"Here is my complete response about the topic, wrapped in double quotation marks as requested."', [None]),
+    ("Do not include keywords '{word}' in the response.",
+     lambda w: "Here is my response about this subject. I have carefully avoided using that particular term throughout my answer.", ["the", "is", "and", "good", "very"]),
+    ("Your response should contain {n} or fewer sentences.",
+     lambda n: " ".join([f"Point {i+1} about the topic." for i in range(min(n, 3))]), [2, 3, 5]),
+    ("Answer with at least {n} words.",
+     lambda n: " ".join(["The topic is important and interesting for many reasons. " for _ in range(n // 10 + 1)]), [50, 100, 200]),
+    ("Finish your response with the exact phrase: Is there anything else I can help with?",
+     lambda _: "Here is my answer about the topic with detailed information. Is there anything else I can help with?", [None]),
+    ("Your response must have {n} sections. Mark the beginning of each section with SECTION X.",
+     lambda n: "\n\n".join([f"SECTION {i+1}\nThis section covers aspect {i+1} of the topic with relevant details." for i in range(n)]), [2, 3, 4]),
+    ("Highlight at least {n} sections in your answer with markdown, i.e. *highlighted section*.",
+     lambda n: " ".join([f"*This is highlighted section {i+1}* with important information." for i in range(n)]), [2, 3, 4]),
+    ("Your answer must contain a title, wrapped in double angular brackets, such as <<poem of joy>>.",
+     lambda _: "<<Response About The Topic>>\n\nHere is my detailed response about the topic.", [None]),
+    ("At the end of your response, please explicitly add a postscript starting with P.S.",
+     lambda _: "Here is my response about the topic.\n\nP.S. I hope this information was helpful to you.", [None]),
+    ("Give two different responses. Responses and only responses should be separated by 6 asterisks: ******.",
+     lambda _: "Here is my first response about the topic.\n\n******\n\nHere is my second, alternative response about the topic.", [None]),
+    ("There should be exactly {n} paragraphs. Paragraphs and only paragraphs are separated by two new lines.",
+     lambda n: "\n\n".join([f"This is paragraph {i+1} discussing an aspect of the topic in detail." for i in range(n)]), [2, 3, 4]),
+]
+
 IFEVAL_TOPIC_RESPONSES = {
     "Explain the water cycle": "The water cycle is a continuous process by which water circulates through the Earth's systems. It begins with evaporation, where heat from the sun causes water from oceans, lakes, and rivers to transform into water vapor. This vapor rises into the atmosphere where it cools and condenses to form clouds through a process called condensation. When the water droplets in clouds become heavy enough, they fall back to Earth as precipitation in the form of rain, snow, or hail. The water then flows across the land surface as runoff, eventually making its way back to bodies of water, or it seeps into the ground to become groundwater. This groundwater can feed springs and wells, and eventually returns to the surface. The cycle then repeats continuously, playing a crucial role in distributing heat and sustaining life on Earth.",
     "Describe the benefits of exercise": "Regular physical exercise offers numerous health benefits that impact both body and mind. Cardiovascular exercise strengthens the heart and improves blood circulation, reducing the risk of heart disease. Exercise helps maintain a healthy weight by burning calories and boosting metabolism. It strengthens muscles and bones, which is particularly important for preventing osteoporosis as we age. Physical activity releases endorphins, natural mood elevators that help reduce stress, anxiety, and symptoms of depression. Regular exercise improves sleep quality and boosts energy levels throughout the day. It enhances cognitive function and memory, potentially reducing the risk of dementia. Exercise also strengthens the immune system, helping the body fight off illness more effectively.",
@@ -261,26 +296,45 @@ def _build_constrained_response(constraint_type, param, base_response):
 
 
 def generate_ifeval_augmented_data(num_samples=500):
-    """Generate synthetic IFEval-style training data with explicit constraints and realistic responses."""
+    """Generate synthetic IFEval-style training data.
+
+    Uses simple template-based responses (v1 style) which empirically
+    outperform realistic long responses for teaching constraint-following.
+    """
     import random as _rng
     _rng.seed(SEED + 100)
 
-    topics = list(IFEVAL_TOPIC_RESPONSES.keys())
+    topics = list(IFEVAL_TOPIC_RESPONSES.keys()) + [
+        "Explain the concept of gravity",
+        "Describe the process of evolution",
+        "Write about the French Revolution",
+        "Explain how batteries work",
+        "Describe the human digestive system",
+        "Write about climate change",
+        "Explain the stock market",
+        "Describe the water purification process",
+        "Write about artificial intelligence ethics",
+        "Explain how solar panels work",
+        "Describe the Industrial Revolution",
+        "Write about space exploration",
+    ]
+
     conversations = []
     for i in range(num_samples):
         topic = _rng.choice(topics)
-        base_response = IFEVAL_TOPIC_RESPONSES[topic]
-        template_str, constraint_type, param_options = _rng.choice(IFEVAL_CONSTRAINT_TEMPLATES)
+        template_str, response_fn, param_options = _rng.choice(IFEVAL_SIMPLE_TEMPLATES)
         param = _rng.choice(param_options)
 
         if param is None:
             constraint = template_str
+            response = response_fn(None)
         elif isinstance(param, str):
             constraint = template_str.format(word=param)
+            response = response_fn(param)
         else:
             constraint = template_str.format(n=param, i="X")
+            response = response_fn(param)
 
-        response = _build_constrained_response(constraint_type, param, base_response)
         prompt = f"{topic}. {constraint}"
         conversations.append([
             {"role": "user", "content": prompt},
