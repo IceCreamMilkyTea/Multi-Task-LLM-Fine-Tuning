@@ -56,6 +56,8 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 35 | exp_0417_0800 | 1000 (resume #27) | 4 | 2e-5 | 32 | — | 90% FLAN‡ | — | 40.7%§ | 57.3%§ | ~42%§ | ~46.7%§ | Discard | JOrG1 |
 | 36 | exp_0417_1100 | 500 (resume #34) | 4 | 1e-5 | 32 | — | 85% FLAN‡+2000aug | — | 44.3%§ | 57.3%§ | ~61%§ | ~54.2%§ | Discard | JOrG1 |
 | 37 | exp_0418_0240_aug | 500 (resume #27) | 4 | 2e-5 | 32 | — | 85% FLAN‡+2000aug_v2 | — | 39.7%§ | 58.0%§ | 42.1%§ | 46.6%§ | Discard | JOrG1 |
+| 38 | exp_0418_0240_rl | 30 RL iters (resume #34) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 44.3%§ | 58.0%§ | 45.7%§ | 49.3%§ | Keep | JOrG1 |
+| 39 | exp_0418_0300 | 500 (resume #27) | 4 | 3e-5 | 32 | — | 85% FLAN‡+3000aug | — | 44.7%§ | 54.7%§ | 42.7%§ | 47.4%§ | Keep | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -140,6 +142,10 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 **exp_0417_1100** (#36) — **Change: resume from #34 (best augment), added 2000 IFEval-augmented samples (double), lr=1e-5 (lower), 500 steps.** Hypothesis: more augmented data + lower LR continues improvement. Result: IFEval strict 44.3% — SAME as #34. lr=1e-5 too low to learn further, and template-based augmented responses were too simple/repetitive. Need higher quality augmented data. checkpoint: `tinker://3f068e13-f75c-5250-8155-95e040bb436d:train:0/sampler_weights/exp_0417_1100_8b_ifeval_augment2_lr1e5_steps500`
 
 **exp_0418_0240_aug** (#37) — **Change: resume from #27, IMPROVED augmentation: replaced template responses with full realistic 200+ word responses on 8 diverse topics, 16 constraint types, 2000 samples, lr=2e-5, 500 steps.** Hypothesis: realistic responses would teach the model to follow constraints while generating real content. Result: IFEval strict 39.7% — WORSE than #34's simple templates (44.3%). Realistic long responses confused the model; short, explicit constraint-response pairs work better. checkpoint: `tinker://d17a9162-dc9c-5b3a-ae85-6323ecbc5dc7:train:0/sampler_weights/exp_0418_0240_8b_improved_augment_lr2e5_steps500`
+
+**exp_0418_0240_rl** (#38) — **Change: GRPO RL (30 iters, 8 problems/iter, 4 samples/problem, lr=3e-6) on GSM8K from best augment checkpoint (#34).** RL to push GSM8K and HumanEval higher. Result: GSM8K 58.0% (+0.7pp), HumanEval 45.7% (+1.2pp). IFEval maintained at 44.3%. RL improves math/code without hurting instruction following. checkpoint: `tinker://04533a3d-82b3-5851-a3af-b3f94fceeb07:train:0/sampler_weights/exp_0418_0240_8b_rl_from_best` state: `tinker://04533a3d-82b3-5851-a3af-b3f94fceeb07:train:0/weights/exp_0418_0240_8b_rl_from_best_state`
+
+**exp_0418_0300** (#39) — **Change: resume from #27, reverted to simple v1 augmentation (back to what worked in #34), but with 3000 samples (3x more than #34's 1000) and lr=3e-5, 500 steps.** Result: IFEval strict 44.7% — marginal +0.4pp over #34. More augmented data gives diminishing returns. GSM8K dropped to 54.7%. The augmentation approach is hitting a ceiling around 44-45%. checkpoint: `tinker://0dc0220c-4b26-5237-9731-30a461ce215b:train:0/sampler_weights/exp_0418_0300_8b_more_simple_augment_lr3e5_steps500` state: `tinker://0dc0220c-4b26-5237-9731-30a461ce215b:train:0/weights/exp_0418_0300_8b_more_simple_augment_lr3e5_steps500_state`
 
 ## Analysis
 
