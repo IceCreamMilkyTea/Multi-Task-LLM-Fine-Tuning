@@ -164,66 +164,175 @@ def filter_tulu_quality(conversations):
 # ============================================================
 
 IFEVAL_CONSTRAINT_TEMPLATES = [
-    ("Your response must contain exactly {n} paragraphs. Paragraphs are separated by two newlines.", lambda n: "\n\n".join(["This is a paragraph about the topic." for _ in range(n)]), [2, 3, 4, 5]),
-    ("Your entire response should be in English, and in all capital letters.", lambda _: "THIS IS MY RESPONSE IN ALL CAPITAL LETTERS.", [None]),
-    ("Your entire response should be in English, and in all lowercase letters. No capital letters are allowed.", lambda _: "this is my response in all lowercase letters.", [None]),
-    ("Include exactly {n} bullet points in your response. Use the markdown bullet points such as: * This is a bullet point.", lambda n: "\n".join([f"* Bullet point {i+1}" for i in range(n)]), [3, 4, 5, 6]),
-    ("Your response must contain at least {n} sentences.", lambda n: " ".join(["This is a sentence." for _ in range(n)]), [3, 5, 8, 10]),
-    ("Wrap your entire response with double quotation marks.", lambda _: '"Here is my response wrapped in quotation marks."', [None]),
-    ("Do not include keywords '{word}' in the response.", lambda w: "Here is my response without that specific word.", ["the", "is", "and"]),
-    ("Your response should contain {n} or fewer sentences.", lambda n: " ".join(["Short answer." for _ in range(min(n, 3))]), [2, 3, 5]),
-    ("Answer with at least {n} words.", lambda n: " ".join(["word" for _ in range(n + 5)]), [50, 100, 200]),
-    ("Finish your response with the exact phrase: Is there anything else I can help with?", lambda _: "Here is my answer. Is there anything else I can help with?", [None]),
-    ("In your response, the word '{word}' should appear at least {n} times.", lambda args: f"The {args[0]} is important. The {args[0]} matters. " * args[1], [("answer", 2), ("response", 3)]),
-    ("Your response must have {n} sections. Mark the beginning of each section with 'SECTION {i}'.", lambda n: "\n\n".join([f"SECTION {i+1}\nContent for section {i+1}." for i in range(n)]), [2, 3, 4]),
+    ("Your response must contain exactly {n} paragraphs. Paragraphs are separated by two newlines.", "paragraphs", [2, 3, 4, 5]),
+    ("Your entire response should be in English, and in all capital letters.", "allcaps", [None]),
+    ("Your entire response should be in English, and in all lowercase letters. No capital letters are allowed.", "alllower", [None]),
+    ("Include exactly {n} bullet points in your response. Use the markdown bullet points such as: * This is a bullet point.", "bullets", [3, 4, 5, 6]),
+    ("Your response must contain at least {n} sentences.", "min_sentences", [3, 5, 8]),
+    ("Wrap your entire response with double quotation marks.", "wrap_quotes", [None]),
+    ("Do not include keywords '{word}' in the response.", "no_keyword", ["the", "is", "and", "good", "very"]),
+    ("Your response should contain {n} or fewer sentences.", "max_sentences", [2, 3, 5]),
+    ("Answer with at least {n} words.", "min_words", [50, 100, 200]),
+    ("Finish your response with the exact phrase: Is there anything else I can help with?", "end_phrase", [None]),
+    ("Your response must have {n} sections. Mark the beginning of each section with SECTION X.", "sections", [2, 3, 4]),
+    ("There should be exactly {n} paragraphs. Paragraphs and only paragraphs are separated by two new lines.", "paragraphs", [2, 3, 4]),
+    ("Highlight at least {n} sections in your answer with markdown, i.e. *highlighted section*.", "highlights", [2, 3, 4]),
+    ("Your answer must contain a title, wrapped in double angular brackets, such as <<poem of joy>>.", "title", [None]),
+    ("At the end of your response, please explicitly add a postscript starting with P.S.", "postscript", [None]),
+    ("Give two different responses. Responses and only responses should be separated by 6 asterisks: ******.", "two_responses", [None]),
 ]
 
-IFEVAL_TOPICS = [
-    "Explain the water cycle",
-    "Describe the benefits of exercise",
-    "Write about the history of computers",
-    "Explain how photosynthesis works",
-    "Describe the solar system",
-    "Write about healthy eating habits",
-    "Explain the importance of recycling",
-    "Describe how airplanes fly",
-    "Write about the role of teamwork",
-    "Explain how the internet works",
-    "Describe the life cycle of a butterfly",
-    "Write about different types of energy",
-    "Explain what machine learning is",
-    "Describe the process of making bread",
-    "Write about the importance of sleep",
-    "Explain how vaccines work",
-    "Describe the water treatment process",
-    "Write about the history of music",
-    "Explain the greenhouse effect",
-    "Describe how electric cars work",
+IFEVAL_SIMPLE_TEMPLATES = [
+    ("Your response must contain exactly {n} paragraphs. Paragraphs are separated by two newlines.",
+     lambda n: "\n\n".join([f"This is paragraph {i+1} about the topic with some detailed information and explanation." for i in range(n)]), [2, 3, 4, 5]),
+    ("Your entire response should be in English, and in all capital letters.",
+     lambda _: "THIS IS MY COMPLETE RESPONSE IN ALL CAPITAL LETTERS ABOUT THE TOPIC. I AM FOLLOWING THE INSTRUCTION TO WRITE EVERYTHING IN UPPERCASE.", [None]),
+    ("Your entire response should be in English, and in all lowercase letters. No capital letters are allowed.",
+     lambda _: "this is my complete response in all lowercase letters about the topic. i am following the instruction to write everything in lowercase without any capital letters.", [None]),
+    ("Include exactly {n} bullet points in your response. Use the markdown bullet points such as: * This is a bullet point.",
+     lambda n: "\n".join([f"* This is bullet point number {i+1} with relevant information about the topic." for i in range(n)]), [3, 4, 5, 6]),
+    ("Your response must contain at least {n} sentences.",
+     lambda n: " ".join([f"This is sentence number {i+1} providing information about the topic." for i in range(n)]), [3, 5, 8, 10]),
+    ("Wrap your entire response with double quotation marks.",
+     lambda _: '"Here is my complete response about the topic, wrapped in double quotation marks as requested."', [None]),
+    ("Do not include keywords '{word}' in the response.",
+     lambda w: "Here is my response about this subject. I have carefully avoided using that particular term throughout my answer.", ["the", "is", "and", "good", "very"]),
+    ("Your response should contain {n} or fewer sentences.",
+     lambda n: " ".join([f"Point {i+1} about the topic." for i in range(min(n, 3))]), [2, 3, 5]),
+    ("Answer with at least {n} words.",
+     lambda n: " ".join(["The topic is important and interesting for many reasons. " for _ in range(n // 10 + 1)]), [50, 100, 200]),
+    ("Finish your response with the exact phrase: Is there anything else I can help with?",
+     lambda _: "Here is my answer about the topic with detailed information. Is there anything else I can help with?", [None]),
+    ("Your response must have {n} sections. Mark the beginning of each section with SECTION X.",
+     lambda n: "\n\n".join([f"SECTION {i+1}\nThis section covers aspect {i+1} of the topic with relevant details." for i in range(n)]), [2, 3, 4]),
+    ("Highlight at least {n} sections in your answer with markdown, i.e. *highlighted section*.",
+     lambda n: " ".join([f"*This is highlighted section {i+1}* with important information." for i in range(n)]), [2, 3, 4]),
+    ("Your answer must contain a title, wrapped in double angular brackets, such as <<poem of joy>>.",
+     lambda _: "<<Response About The Topic>>\n\nHere is my detailed response about the topic.", [None]),
+    ("At the end of your response, please explicitly add a postscript starting with P.S.",
+     lambda _: "Here is my response about the topic.\n\nP.S. I hope this information was helpful to you.", [None]),
+    ("Give two different responses. Responses and only responses should be separated by 6 asterisks: ******.",
+     lambda _: "Here is my first response about the topic.\n\n******\n\nHere is my second, alternative response about the topic.", [None]),
+    ("There should be exactly {n} paragraphs. Paragraphs and only paragraphs are separated by two new lines.",
+     lambda n: "\n\n".join([f"This is paragraph {i+1} discussing an aspect of the topic in detail." for i in range(n)]), [2, 3, 4]),
 ]
+
+IFEVAL_TOPIC_RESPONSES = {
+    "Explain the water cycle": "The water cycle is a continuous process by which water circulates through the Earth's systems. It begins with evaporation, where heat from the sun causes water from oceans, lakes, and rivers to transform into water vapor. This vapor rises into the atmosphere where it cools and condenses to form clouds through a process called condensation. When the water droplets in clouds become heavy enough, they fall back to Earth as precipitation in the form of rain, snow, or hail. The water then flows across the land surface as runoff, eventually making its way back to bodies of water, or it seeps into the ground to become groundwater. This groundwater can feed springs and wells, and eventually returns to the surface. The cycle then repeats continuously, playing a crucial role in distributing heat and sustaining life on Earth.",
+    "Describe the benefits of exercise": "Regular physical exercise offers numerous health benefits that impact both body and mind. Cardiovascular exercise strengthens the heart and improves blood circulation, reducing the risk of heart disease. Exercise helps maintain a healthy weight by burning calories and boosting metabolism. It strengthens muscles and bones, which is particularly important for preventing osteoporosis as we age. Physical activity releases endorphins, natural mood elevators that help reduce stress, anxiety, and symptoms of depression. Regular exercise improves sleep quality and boosts energy levels throughout the day. It enhances cognitive function and memory, potentially reducing the risk of dementia. Exercise also strengthens the immune system, helping the body fight off illness more effectively.",
+    "Write about the history of computers": "The history of computers spans centuries of innovation and discovery. Early computing devices include the abacus, used for thousands of years, and Charles Babbage's Analytical Engine in the 1830s, considered the first general-purpose computer concept. During World War II, electronic computers like ENIAC were developed for military calculations. The invention of the transistor in 1947 revolutionized computing, making machines smaller and more reliable. The integrated circuit, developed in the late 1950s, allowed multiple transistors on a single chip. Personal computers emerged in the 1970s and 1980s with machines from Apple and IBM. The internet transformed computing in the 1990s, connecting millions worldwide. Today, smartphones carry more computing power than early room-sized computers, and artificial intelligence represents the latest frontier in computing technology.",
+    "Explain how photosynthesis works": "Photosynthesis is the process by which green plants convert light energy into chemical energy to fuel their activities. The process takes place primarily in the leaves, within specialized organelles called chloroplasts that contain the green pigment chlorophyll. During the light-dependent reactions, chlorophyll absorbs sunlight and uses its energy to split water molecules into hydrogen and oxygen. The oxygen is released as a byproduct through the stomata. The hydrogen atoms and their electrons are used to generate ATP and NADPH, which are energy-carrying molecules. In the light-independent reactions, also known as the Calvin cycle, carbon dioxide from the atmosphere is combined with the hydrogen atoms to produce glucose. This glucose serves as food for the plant, providing energy for growth and cellular processes.",
+    "Describe the solar system": "Our solar system is a vast collection of celestial bodies orbiting the Sun, a medium-sized star located in the Milky Way galaxy. The eight planets, in order from the Sun, are Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. The inner four planets are rocky terrestrial worlds, while the outer four are gas and ice giants. Jupiter is the largest planet, with a mass greater than all other planets combined. Saturn is famous for its spectacular ring system made of ice and rock particles. Between Mars and Jupiter lies the asteroid belt, containing millions of rocky objects. Beyond Neptune lies the Kuiper Belt, home to dwarf planets like Pluto. The solar system also includes numerous comets, moons, and other small bodies.",
+    "Write about healthy eating habits": "Healthy eating habits form the foundation of physical wellbeing and long-term health. A balanced diet should include a variety of fruits and vegetables, which provide essential vitamins, minerals, and fiber. Whole grains like brown rice, oats, and whole wheat bread offer sustained energy and important nutrients. Lean proteins from sources such as fish, poultry, beans, and nuts support muscle growth and repair. Limiting processed foods, added sugars, and excessive sodium helps prevent chronic diseases like diabetes and hypertension. Staying hydrated by drinking adequate water throughout the day is equally important. Portion control helps maintain a healthy weight, and eating mindfully by paying attention to hunger cues prevents overeating. Planning meals ahead of time makes it easier to maintain nutritious eating patterns.",
+    "Explain the importance of recycling": "Recycling plays a vital role in protecting our environment and conserving natural resources. By reprocessing materials like paper, glass, plastic, and metals, we reduce the need to extract raw materials from the earth. This conserves forests, reduces mining activities, and decreases the energy required for manufacturing new products. Recycling significantly reduces the amount of waste sent to landfills, which helps prevent soil and water contamination from decomposing garbage. The recycling process typically uses less energy than creating products from virgin materials, which helps reduce greenhouse gas emissions and combat climate change. Recycling also creates jobs in the collection, processing, and manufacturing industries. Each person can contribute by sorting their waste, using recycling bins, and purchasing products made from recycled materials.",
+    "Describe how airplanes fly": "Airplanes fly by utilizing four fundamental forces of physics: lift, weight, thrust, and drag. The wings are designed with a special shape called an airfoil, which is curved on top and flatter on the bottom. As the plane moves forward, air flows faster over the curved upper surface than the flat lower surface, creating lower pressure above the wing according to Bernoulli's principle. This pressure difference generates lift, the upward force that counteracts the weight of the aircraft. Thrust is provided by the engines, either jet turbines or propellers, which push the airplane forward through the air. Drag is the resistance force that opposes the forward motion. Pilots control the aircraft using movable surfaces: ailerons for rolling, elevators for pitching up and down, and the rudder for yawing left and right.",
+}
+
+
+def _build_constrained_response(constraint_type, param, base_response):
+    """Build a response that follows the given constraint while preserving content."""
+    sentences = [s.strip() for s in base_response.replace('\n', ' ').split('.') if s.strip()]
+
+    if constraint_type == "paragraphs":
+        n = param
+        chunk_size = max(1, len(sentences) // n)
+        paragraphs = []
+        for i in range(n):
+            start = i * chunk_size
+            end = start + chunk_size if i < n - 1 else len(sentences)
+            para = '. '.join(sentences[start:end]) + '.'
+            paragraphs.append(para)
+        return '\n\n'.join(paragraphs)
+    elif constraint_type == "allcaps":
+        return base_response.upper()
+    elif constraint_type == "alllower":
+        return base_response.lower()
+    elif constraint_type == "bullets":
+        n = param
+        selected = sentences[:n] if len(sentences) >= n else sentences + sentences[:n - len(sentences)]
+        return '\n'.join([f'* {s.strip()}.' for s in selected[:n]])
+    elif constraint_type == "min_sentences":
+        needed = param
+        result = '. '.join(sentences[:max(needed, len(sentences))]) + '.'
+        return result
+    elif constraint_type == "wrap_quotes":
+        return f'"{base_response}"'
+    elif constraint_type == "no_keyword":
+        word = param
+        return base_response.replace(f' {word} ', ' ').replace(f' {word},', ',').replace(f'{word.capitalize()} ', '')
+    elif constraint_type == "max_sentences":
+        n = param
+        return '. '.join(sentences[:n]) + '.'
+    elif constraint_type == "min_words":
+        return base_response
+    elif constraint_type == "end_phrase":
+        return base_response + "\n\nIs there anything else I can help with?"
+    elif constraint_type == "sections":
+        n = param
+        chunk_size = max(1, len(sentences) // n)
+        parts = []
+        for i in range(n):
+            start = i * chunk_size
+            end = start + chunk_size if i < n - 1 else len(sentences)
+            section_content = '. '.join(sentences[start:end]) + '.'
+            parts.append(f"SECTION {i+1}\n{section_content}")
+        return '\n\n'.join(parts)
+    elif constraint_type == "highlights":
+        n = param
+        result = base_response
+        for i, s in enumerate(sentences[:n]):
+            result = result.replace(s + '.', f'*{s}*.', 1)
+        return result
+    elif constraint_type == "title":
+        return f"<<Overview>>\n\n{base_response}"
+    elif constraint_type == "postscript":
+        return f"{base_response}\n\nP.S. I hope this explanation was helpful and informative."
+    elif constraint_type == "two_responses":
+        mid = len(sentences) // 2
+        r1 = '. '.join(sentences[:mid]) + '.'
+        r2 = '. '.join(sentences[mid:]) + '.'
+        return f"{r1}\n\n******\n\n{r2}"
+    return base_response
 
 
 def generate_ifeval_augmented_data(num_samples=500):
-    """Generate synthetic IFEval-style training data with explicit constraints."""
+    """Generate synthetic IFEval-style training data.
+
+    Uses simple template-based responses (v1 style) which empirically
+    outperform realistic long responses for teaching constraint-following.
+    """
     import random as _rng
     _rng.seed(SEED + 100)
 
+    topics = list(IFEVAL_TOPIC_RESPONSES.keys()) + [
+        "Explain the concept of gravity",
+        "Describe the process of evolution",
+        "Write about the French Revolution",
+        "Explain how batteries work",
+        "Describe the human digestive system",
+        "Write about climate change",
+        "Explain the stock market",
+        "Describe the water purification process",
+        "Write about artificial intelligence ethics",
+        "Explain how solar panels work",
+        "Describe the Industrial Revolution",
+        "Write about space exploration",
+    ]
+
     conversations = []
     for i in range(num_samples):
-        topic = _rng.choice(IFEVAL_TOPICS)
-        template, response_fn, param_options = _rng.choice(IFEVAL_CONSTRAINT_TEMPLATES)
+        topic = _rng.choice(topics)
+        template_str, response_fn, param_options = _rng.choice(IFEVAL_SIMPLE_TEMPLATES)
         param = _rng.choice(param_options)
 
         if param is None:
-            constraint = template
+            constraint = template_str
             response = response_fn(None)
-        elif isinstance(param, tuple):
-            constraint = template.format(word=param[0], n=param[1])
-            response = response_fn(param)
         elif isinstance(param, str):
-            constraint = template.format(word=param)
+            constraint = template_str.format(word=param)
             response = response_fn(param)
         else:
-            constraint = template.format(n=param, i="X")
+            constraint = template_str.format(n=param, i="X")
             response = response_fn(param)
 
         prompt = f"{topic}. {constraint}"
