@@ -62,6 +62,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 41 | exp_0418_0420 | 300 (resume #40) | 4 | 1e-5 | 32 | — | 85% FLAN‡+2000aug | — | 46.3%§ | 53.3%§ | 45.1%§ | 48.2%§ | Discard | JOrG1 |
 | 42 | exp_0418_0351b | 30 RL iters (resume #39) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 45.0%§ | 56.3%§ | 43.3%§ | 48.2%§ | Keep | JOrG1 |
 | 43 | **exp_0418_0440b** | **500 (resume RL#42)** | **4** | **2e-5** | **32** | **—** | **80% FLAN‡+2000aug** | **—** | **46.3%§** | **57.0%§** | **47.0%§** | **50.1%§** | **★★★ BEST balanced** | JOrG1 |
+| 44 | exp_0418_0440a | 30 RL iters (resume #40) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 46.3%§ | 58.0%§ | 44.5%§ | 49.6%§ | Keep | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -185,6 +186,10 @@ IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instr
 - rank=8 + filter + curriculum (even worse than rank=8 alone)
 - Data quality filtering + curriculum learning alone (doesn't improve over random; #18 within noise of #15)
 - Multi-stage Stage 2 Tulu focus from best checkpoint (+2pp IFEval, not significant; #19)
+
+**exp_0418_0440b** (#43) ★★★ BEST BALANCED — **Change: resume from RL#42 (IFEval 45%, GSM8K 56.3%), then SFT with 2000 IFEval augment + 80% FLAN, lr=2e-5, 500 steps.** RL→augment→RL→augment cycle: each RL round improves math/code, each augment round pushes IFEval. Result: all 3 metrics high. IFEval 46.3%, GSM8K 57%, HumanEval 47%. Avg 50.1%. checkpoint: `tinker://0eafb347-83c6-5a5b-99d8-b4ed11e69e51:train:0/sampler_weights/exp_0418_0440_8b_augment_from_42_lr2e5_steps500` state: `tinker://0eafb347-83c6-5a5b-99d8-b4ed11e69e51:train:0/weights/exp_0418_0440_8b_augment_from_42_lr2e5_steps500_state`
+
+**exp_0418_0440a** (#44) — **Change: RL from #40 (IFEval 46.3%), 30 iters, lr=3e-6.** Pushes GSM8K to 58% while maintaining IFEval at 46.3%. checkpoint: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/sampler_weights/exp_0418_0440_8b_rl_from_40` state: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/weights/exp_0418_0440_8b_rl_from_40_state`
 
 ### Best checkpoint for highest IFEval:
 - **exp_0417_0700_deep** (#33, Llama-3.1-8B): IFEval **40.9% strict / 47.8% final** (full eval), GSM8K 53.1%, HumanEval ~43%
