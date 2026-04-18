@@ -1,17 +1,17 @@
 {
-  "checkpoint_path": "tinker://5dad676b-6ed6-5544-926b-1c0e89118fbd:train:0/sampler_weights/exp_0417_1000_8b_ifeval_augment_lr2e5_steps500",
-  "state_path": "tinker://5dad676b-6ed6-5544-926b-1c0e89118fbd:train:0/weights/exp_0417_1000_8b_ifeval_augment_lr2e5_steps500_state",
+  "checkpoint_path": "tinker://3f068e13-f75c-5250-8155-95e040bb436d:train:0/sampler_weights/exp_0417_1100_8b_ifeval_augment2_lr1e5_steps500",
+  "state_path": "tinker://3f068e13-f75c-5250-8155-95e040bb436d:train:0/weights/exp_0417_1100_8b_ifeval_augment2_lr1e5_steps500_state",
   "base_model": "meta-llama/Llama-3.1-8B",
   "renderer_name": "role_colon",
   "training": {
     "num_steps": 500,
     "batch_size": 4,
-    "learning_rate": 2e-05,
+    "learning_rate": 1e-05,
     "lora_rank": 32,
     "gsm8k_samples": 1973,
     "tulu_samples": 22360,
     "code_samples": 1973,
-    "total_samples": 27306,
+    "total_samples": 28306,
     "filter_quality": true,
     "curriculum": false,
     "stage2_task": "tulu"
