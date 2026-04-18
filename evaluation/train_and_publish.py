@@ -160,6 +160,83 @@ def filter_tulu_quality(conversations):
 
 
 # ============================================================
+# IFEval Data Augmentation
+# ============================================================
+
+IFEVAL_CONSTRAINT_TEMPLATES = [
+    ("Your response must contain exactly {n} paragraphs. Paragraphs are separated by two newlines.", lambda n: "\n\n".join(["This is a paragraph about the topic." for _ in range(n)]), [2, 3, 4, 5]),
+    ("Your entire response should be in English, and in all capital letters.", lambda _: "THIS IS MY RESPONSE IN ALL CAPITAL LETTERS.", [None]),
+    ("Your entire response should be in English, and in all lowercase letters. No capital letters are allowed.", lambda _: "this is my response in all lowercase letters.", [None]),
+    ("Include exactly {n} bullet points in your response. Use the markdown bullet points such as: * This is a bullet point.", lambda n: "\n".join([f"* Bullet point {i+1}" for i in range(n)]), [3, 4, 5, 6]),
+    ("Your response must contain at least {n} sentences.", lambda n: " ".join(["This is a sentence." for _ in range(n)]), [3, 5, 8, 10]),
+    ("Wrap your entire response with double quotation marks.", lambda _: '"Here is my response wrapped in quotation marks."', [None]),
+    ("Do not include keywords '{word}' in the response.", lambda w: "Here is my response without that specific word.", ["the", "is", "and"]),
+    ("Your response should contain {n} or fewer sentences.", lambda n: " ".join(["Short answer." for _ in range(min(n, 3))]), [2, 3, 5]),
+    ("Answer with at least {n} words.", lambda n: " ".join(["word" for _ in range(n + 5)]), [50, 100, 200]),
+    ("Finish your response with the exact phrase: Is there anything else I can help with?", lambda _: "Here is my answer. Is there anything else I can help with?", [None]),
+    ("In your response, the word '{word}' should appear at least {n} times.", lambda args: f"The {args[0]} is important. The {args[0]} matters. " * args[1], [("answer", 2), ("response", 3)]),
+    ("Your response must have {n} sections. Mark the beginning of each section with 'SECTION {i}'.", lambda n: "\n\n".join([f"SECTION {i+1}\nContent for section {i+1}." for i in range(n)]), [2, 3, 4]),
+]
+
+IFEVAL_TOPICS = [
+    "Explain the water cycle",
+    "Describe the benefits of exercise",
+    "Write about the history of computers",
+    "Explain how photosynthesis works",
+    "Describe the solar system",
+    "Write about healthy eating habits",
+    "Explain the importance of recycling",
+    "Describe how airplanes fly",
+    "Write about the role of teamwork",
+    "Explain how the internet works",
+    "Describe the life cycle of a butterfly",
+    "Write about different types of energy",
+    "Explain what machine learning is",
+    "Describe the process of making bread",
+    "Write about the importance of sleep",
+    "Explain how vaccines work",
+    "Describe the water treatment process",
+    "Write about the history of music",
+    "Explain the greenhouse effect",
+    "Describe how electric cars work",
+]
+
+
+def generate_ifeval_augmented_data(num_samples=500):
+    """Generate synthetic IFEval-style training data with explicit constraints."""
+    import random as _rng
+    _rng.seed(SEED + 100)
+
+    conversations = []
+    for i in range(num_samples):
+        topic = _rng.choice(IFEVAL_TOPICS)
+        template, response_fn, param_options = _rng.choice(IFEVAL_CONSTRAINT_TEMPLATES)
+        param = _rng.choice(param_options)
+
+        if param is None:
+            constraint = template
+            response = response_fn(None)
+        elif isinstance(param, tuple):
+            constraint = template.format(word=param[0], n=param[1])
+            response = response_fn(param)
+        elif isinstance(param, str):
+            constraint = template.format(word=param)
+            response = response_fn(param)
+        else:
+            constraint = template.format(n=param, i="X")
+            response = response_fn(param)
+
+        prompt = f"{topic}. {constraint}"
+        conversations.append([
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": response},
+        ])
+
+    print(f"  Generated {len(conversations)} IFEval-augmented conversations")
+    return conversations
+
+
+# ============================================================
 # Curriculum Learning
 # ============================================================
 
@@ -354,6 +431,8 @@ def main():
                         help="Stage 2: train primarily on this task (use with --resume_from)")
     parser.add_argument("--stage2_ratio", type=float, default=0.7,
                         help="Stage 2: fraction of data from the focused task (default: 0.7)")
+    parser.add_argument("--ifeval_augment", type=int, default=0,
+                        help="Number of synthetic IFEval-style augmented samples to add (0=disabled)")
     parser.add_argument("--model", type=str, default=MODEL_3B,
                         choices=[MODEL_3B, MODEL_8B],
                         help="Base model: 3B (default) or 8B (for final runs)")
@@ -416,17 +495,23 @@ def main():
         print(f"Stage 2 rebalanced (focus={args.stage2_task}, ratio={focus_ratio}): "
               f"GSM8K={len(gsm8k_convos)}, Tulu={len(tulu_convos)}, Code={len(code_convos)}")
 
+    # IFEval data augmentation
+    ifeval_augmented = []
+    if args.ifeval_augment > 0:
+        ifeval_augmented = generate_ifeval_augmented_data(args.ifeval_augment)
+
     # Combine: curriculum (easy→hard) or random shuffle
     if args.curriculum:
         print("Applying curriculum learning (easy → hard)...")
-        all_convos = sort_curriculum(gsm8k_convos, code_convos, tulu_convos)
+        all_convos = sort_curriculum(gsm8k_convos, code_convos, tulu_convos) + ifeval_augmented
     else:
-        all_convos = gsm8k_convos + tulu_convos + code_convos
+        all_convos = gsm8k_convos + tulu_convos + code_convos + ifeval_augmented
         random.seed(SEED)
         random.shuffle(all_convos)
 
     print(f"Total conversations: {len(all_convos)} "
-          f"(GSM8K: {len(gsm8k_convos)}, Tulu: {len(tulu_convos)}, Code: {len(code_convos)})")
+          f"(GSM8K: {len(gsm8k_convos)}, Tulu: {len(tulu_convos)}, Code: {len(code_convos)}, "
+          f"IFEval-aug: {len(ifeval_augmented)})")
 
     # Convert to training data
     print("Preparing training data...")

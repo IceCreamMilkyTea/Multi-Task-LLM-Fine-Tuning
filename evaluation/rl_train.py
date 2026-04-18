@@ -26,7 +26,8 @@ from tinker.types import TensorData
 from tinker_cookbook import model_info, renderers
 from tinker_cookbook.tokenizer_utils import get_tokenizer
 
-MODEL = "meta-llama/Llama-3.2-3B"
+MODEL_3B = "meta-llama/Llama-3.2-3B"
+MODEL_8B = "meta-llama/Llama-3.1-8B"
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
 SEED = 42
 
@@ -117,8 +118,12 @@ def main():
     parser.add_argument("--num_train_problems", type=int, default=500,
                         help="Number of GSM8K problems to sample from")
     parser.add_argument("--no_publish", action="store_true")
+    parser.add_argument("--model", type=str, default=MODEL_3B,
+                        choices=[MODEL_3B, MODEL_8B],
+                        help="Base model: 3B (default) or 8B")
     args = parser.parse_args()
 
+    MODEL = args.model
     print(f"Model: {MODEL}")
     tokenizer = get_tokenizer(MODEL)
     renderer_name = model_info.get_recommended_renderer_name(MODEL)
