@@ -58,6 +58,11 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 37 | exp_0418_0240_aug | 500 (resume #27) | 4 | 2e-5 | 32 | — | 85% FLAN‡+2000aug_v2 | — | 39.7%§ | 58.0%§ | 42.1%§ | 46.6%§ | Discard | JOrG1 |
 | 38 | exp_0418_0240_rl | 30 RL iters (resume #34) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 44.3%§ | 58.0%§ | 45.7%§ | 49.3%§ | Keep | JOrG1 |
 | 39 | exp_0418_0300 | 500 (resume #27) | 4 | 3e-5 | 32 | — | 85% FLAN‡+3000aug | — | 44.7%§ | 54.7%§ | 42.7%§ | 47.4%§ | Keep | JOrG1 |
+| 40 | **exp_0418_0351a** | **500 (resume RL#38)** | **4** | **2e-5** | **32** | **—** | **80% FLAN‡+2000aug** | **—** | **46.3%§** | **54.0%§** | **46.3%§** | **48.9%§** | **★★★ BEST strict** | JOrG1 |
+| 41 | exp_0418_0420 | 300 (resume #40) | 4 | 1e-5 | 32 | — | 85% FLAN‡+2000aug | — | 46.3%§ | 53.3%§ | 45.1%§ | 48.2%§ | Discard | JOrG1 |
+| 42 | exp_0418_0351b | 30 RL iters (resume #39) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 45.0%§ | 56.3%§ | 43.3%§ | 48.2%§ | Keep | JOrG1 |
+| 43 | **exp_0418_0440b** | **500 (resume RL#42)** | **4** | **2e-5** | **32** | **—** | **80% FLAN‡+2000aug** | **—** | **46.3%§** | **57.0%§** | **47.0%§** | **50.1%§** | **★★★ BEST balanced** | JOrG1 |
+| 44 | exp_0418_0440a | 30 RL iters (resume #40) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 46.3%§ | 58.0%§ | 44.5%§ | 49.6%§ | Keep | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -147,6 +152,12 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 
 **exp_0418_0300** (#39) — **Change: resume from #27, reverted to simple v1 augmentation (back to what worked in #34), but with 3000 samples (3x more than #34's 1000) and lr=3e-5, 500 steps.** Result: IFEval strict 44.7% — marginal +0.4pp over #34. More augmented data gives diminishing returns. GSM8K dropped to 54.7%. The augmentation approach is hitting a ceiling around 44-45%. checkpoint: `tinker://0dc0220c-4b26-5237-9731-30a461ce215b:train:0/sampler_weights/exp_0418_0300_8b_more_simple_augment_lr3e5_steps500` state: `tinker://0dc0220c-4b26-5237-9731-30a461ce215b:train:0/weights/exp_0418_0300_8b_more_simple_augment_lr3e5_steps500_state`
 
+**exp_0418_0351a** (#40) ★★★ — **Change: resume from RL checkpoint #38 (GSM8K 58%, IFEval 44.3%), then SFT with 2000 IFEval augment + 80% FLAN, lr=2e-5, 500 steps.** Key insight: RL→SFT pipeline combines RL's math/code improvement with SFT's instruction-following. IFEval strict 46.3% — best ever! Only 1pp from target. checkpoint: `tinker://2ee0e44d-8bfd-5550-be73-df5a246c0b5f:train:0/sampler_weights/exp_0418_0351_8b_rl_then_augment_lr2e5_steps500` state: `tinker://2ee0e44d-8bfd-5550-be73-df5a246c0b5f:train:0/weights/exp_0418_0351_8b_rl_then_augment_lr2e5_steps500_state`
+
+**exp_0418_0420** (#41) — **Change: resume from #40, even gentler lr=1e-5, 300 steps, 85% FLAN + 2000 aug.** Result: IFEval 46.3% (same), lr=1e-5 too low to learn further. checkpoint: `tinker://8cce7de0-4595-507a-bfeb-fbdfb2ae3684:train:0/sampler_weights/exp_0418_0420_8b_final_push_lr1e5_steps300`
+
+**exp_0418_0351b** (#42) — **Change: RL from #39 (best IFEval augment 44.7%), 30 iters, lr=3e-6.** Result: IFEval 45.0%, GSM8K 56.3%, HumanEval 43.3%. RL maintains IFEval while pushing math. Good balance. checkpoint: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/sampler_weights/exp_0418_0351_8b_rl_from_best_ifeval` state: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/weights/exp_0418_0351_8b_rl_from_best_ifeval_state`
+
 ## Analysis
 
 ### IFEval metric note
@@ -175,6 +186,10 @@ IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instr
 - rank=8 + filter + curriculum (even worse than rank=8 alone)
 - Data quality filtering + curriculum learning alone (doesn't improve over random; #18 within noise of #15)
 - Multi-stage Stage 2 Tulu focus from best checkpoint (+2pp IFEval, not significant; #19)
+
+**exp_0418_0440b** (#43) ★★★ BEST BALANCED — **Change: resume from RL#42 (IFEval 45%, GSM8K 56.3%), then SFT with 2000 IFEval augment + 80% FLAN, lr=2e-5, 500 steps.** RL→augment→RL→augment cycle: each RL round improves math/code, each augment round pushes IFEval. Result: all 3 metrics high. IFEval 46.3%, GSM8K 57%, HumanEval 47%. Avg 50.1%. checkpoint: `tinker://0eafb347-83c6-5a5b-99d8-b4ed11e69e51:train:0/sampler_weights/exp_0418_0440_8b_augment_from_42_lr2e5_steps500` state: `tinker://0eafb347-83c6-5a5b-99d8-b4ed11e69e51:train:0/weights/exp_0418_0440_8b_augment_from_42_lr2e5_steps500_state`
+
+**exp_0418_0440a** (#44) — **Change: RL from #40 (IFEval 46.3%), 30 iters, lr=3e-6.** Pushes GSM8K to 58% while maintaining IFEval at 46.3%. checkpoint: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/sampler_weights/exp_0418_0440_8b_rl_from_40` state: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/weights/exp_0418_0440_8b_rl_from_40_state`
 
 ### Best checkpoint for highest IFEval:
 - **exp_0417_0700_deep** (#33, Llama-3.1-8B): IFEval **40.9% strict / 47.8% final** (full eval), GSM8K 53.1%, HumanEval ~43%
