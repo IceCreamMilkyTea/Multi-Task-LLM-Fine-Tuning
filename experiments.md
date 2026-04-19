@@ -63,6 +63,8 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 42 | exp_0418_0351b | 30 RL iters (resume #39) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 45.0%§ | 56.3%§ | 43.3%§ | 48.2%§ | Keep | JOrG1 |
 | 43 | **exp_0418_0440b** | **500 (resume RL#42)** | **4** | **2e-5** | **32** | **—** | **80% FLAN‡+2000aug** | **—** | **46.3%§** | **57.0%§** | **47.0%§** | **50.1%§** | **★★★ BEST balanced** | JOrG1 |
 | 44 | exp_0418_0440a | 30 RL iters (resume #40) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 46.3%§ | 58.0%§ | 44.5%§ | 49.6%§ | Keep | JOrG1 |
+| 45 | exp_0418_2320_rl | 30 IFEval RL (resume #43) | 8 | 5e-6 | 32 | IFEval RL | — | — | 42.7%§ | 56.0%§ | 48.2%§ | 49.0%§ | Discard | JOrG1 |
+| 46 | **exp_0418_2320_sft** | **2000 (from base)** | **4** | **1e-4** | **64** | **7469*** | **16k FLAN‡+3000aug** | **10k*** | **49.0%§** | **54.0%§** | **46.3%§** | **49.8%§** | **★★★★ BEST** | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -159,6 +161,10 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 **exp_0418_0351b** (#42) — **Change: RL from #39 (best IFEval augment 44.7%), 30 iters, lr=3e-6.** Result: IFEval 45.0%, GSM8K 56.3%, HumanEval 43.3%. RL maintains IFEval while pushing math. Good balance. checkpoint: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/sampler_weights/exp_0418_0351_8b_rl_from_best_ifeval` state: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/weights/exp_0418_0351_8b_rl_from_best_ifeval_state`
 
 ## Analysis
+
+**exp_0418_2320_rl** (#45) — **Change: IFEval constraint RL with fixed reward-centered advantages. 30 iters, 8 samples/prompt, 8 prompts/iter, lr=5e-6. Programmatic reward: check if model output satisfies formatting constraints (all caps, bullet points, paragraphs, etc.).** Fix worked (Datums=64 every iter, previously 0). But IFEval strict dropped to 42.7% (-3.6pp vs #43). Binary constraint reward too noisy; RL hurts instruction following. HumanEval improved to 48.2%. checkpoint: `tinker://0234eefa-a51e-597d-b462-1fa2dc4b62e1:train:0/sampler_weights/exp_0418_2320_8b_ifeval_rl_fixed`
+
+**exp_0418_2320_sft** (#46) ★★★★ NEW BEST — **Change: massive SFT from scratch with rank=64 (doubled from 32), 2000 steps (4x usual), 37k training examples (7.5k GSM8K + 16k FLAN Tulu + 10k Code + 3k IFEval augment), max_length=2048.** The combination of higher rank + more steps + more diverse data + IFEval augmentation is the breakthrough. IFEval strict **49.0%** — first time above 47.3% target! All three targets exceeded. checkpoint: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/sampler_weights/exp_0418_2320_8b_massive_sft_rank64_steps2000` state: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/weights/exp_0418_2320_8b_massive_sft_rank64_steps2000_state`
 
 ### IFEval metric note
 IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instructions in a prompt must be followed exactly). `final_acc` averages strict/loose at prompt/instruction level. The baseline "45.0%" in program.md is ambiguous. Our best:
