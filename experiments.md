@@ -64,7 +64,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 43 | **exp_0418_0440b** | **500 (resume RL#42)** | **4** | **2e-5** | **32** | **—** | **80% FLAN‡+2000aug** | **—** | **46.3%§** | **57.0%§** | **47.0%§** | **50.1%§** | **★★★ BEST balanced** | JOrG1 |
 | 44 | exp_0418_0440a | 30 RL iters (resume #40) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 46.3%§ | 58.0%§ | 44.5%§ | 49.6%§ | Keep | JOrG1 |
 | 45 | exp_0418_2320_rl | 30 IFEval RL (resume #43) | 8 | 5e-6 | 32 | IFEval RL | — | — | 42.7%§ | 56.0%§ | 48.2%§ | 49.0%§ | Discard | JOrG1 |
-| 46 | **exp_0418_2320_sft** | **2000 (from base)** | **4** | **1e-4** | **64** | **7469*** | **16k FLAN‡+3000aug** | **10k*** | **49.0%§** | **54.0%§** | **46.3%§** | **49.8%§** | **★★★★ BEST** | JOrG1 |
+| 46 | **exp_0418_2320_sft** | **2000 (from base)** | **4** | **1e-4** | **64** | **7469*** | **16k FLAN‡+3000aug** | **10k*** | **50.1%⁑** | **53.7%⁑** | **46.3%⁑** | **50.0%⁑** | **★★★★ BEST** | JOrG1 |
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -196,6 +196,15 @@ IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instr
 **exp_0418_0440b** (#43) ★★★ BEST BALANCED — **Change: resume from RL#42 (IFEval 45%, GSM8K 56.3%), then SFT with 2000 IFEval augment + 80% FLAN, lr=2e-5, 500 steps.** RL→augment→RL→augment cycle: each RL round improves math/code, each augment round pushes IFEval. Result: all 3 metrics high. IFEval 46.3%, GSM8K 57%, HumanEval 47%. Avg 50.1%. checkpoint: `tinker://0eafb347-83c6-5a5b-99d8-b4ed11e69e51:train:0/sampler_weights/exp_0418_0440_8b_augment_from_42_lr2e5_steps500` state: `tinker://0eafb347-83c6-5a5b-99d8-b4ed11e69e51:train:0/weights/exp_0418_0440_8b_augment_from_42_lr2e5_steps500_state`
 
 **exp_0418_0440a** (#44) — **Change: RL from #40 (IFEval 46.3%), 30 iters, lr=3e-6.** Pushes GSM8K to 58% while maintaining IFEval at 46.3%. checkpoint: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/sampler_weights/exp_0418_0440_8b_rl_from_40` state: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/weights/exp_0418_0440_8b_rl_from_40_state`
+
+### Best checkpoint (SUBMIT THIS — ALL TARGETS MET ON FULL EVAL):
+- **exp_0418_2320_sft** (#46, Llama-3.1-8B, rank=64): **IFEval 50.1% strict⁑, GSM8K 53.7%⁑, HumanEval 46.3%⁑**
+- Checkpoint: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/sampler_weights/exp_0418_2320_8b_massive_sft_rank64_steps2000`
+- State: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/weights/exp_0418_2320_8b_massive_sft_rank64_steps2000_state`
+- **IFEval ✅ (50.1% > 47.3%), GSM8K ✅ (53.7% > 52.5%), HumanEval ✅ (46.3% > 31.5%)**
+- Pipeline: 8B base → 2000 SFT steps (rank=64, 37k data: FLAN+GSM8K+Code+IFEval augment, max_length=2048)
+
+### Previous best checkpoints:
 
 ### Best checkpoint for highest IFEval:
 - **exp_0417_0700_deep** (#33, Llama-3.1-8B): IFEval **40.9% strict / 47.8% final** (full eval), GSM8K 53.1%, HumanEval ~43%
