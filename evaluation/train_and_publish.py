@@ -635,6 +635,8 @@ def main():
             all_data.append(datum)
         except Exception as e:
             skipped += 1
+            if skipped <= 5:
+                print(f"    Skipped example {skipped}: {type(e).__name__}: {e}")
     print(f"  {len(all_data)} training examples prepared ({skipped} skipped)")
 
     # Create training client
