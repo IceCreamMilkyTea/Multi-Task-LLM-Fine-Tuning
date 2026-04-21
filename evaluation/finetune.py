@@ -127,12 +127,19 @@ def load_tulu3_targeted(max_samples=None, balance_mode="capped", verbose=True):
     conversations = []
     source_counts = Counter()
     scanned = 0
-    
+
+    # 计算所有source的cap总和，当全部达到cap时停止
+    total_cap = sum(PER_SOURCE_CAP.get(s, 999_999) for s in KEEP_SOURCES) if balance_mode == "capped" else None
+
     for example in ds:
         scanned += 1
+
+        # 当所有source都达到cap时提前停止
+        if balance_mode == "capped" and len(conversations) >= (total_cap if total_cap else 999_999):
+            break
         if max_samples and len(conversations) >= max_samples:
             break
-        
+
         source = example.get("source", "")
         
         # 过滤 1:只保留目标 source
@@ -301,8 +308,8 @@ def main():
                         help="Base model (default: 8B for final runs)")
     
     # ===== 数据配置 =====
-    parser.add_argument("--num_samples", type=int, default=300_000,
-                        help="Target total samples (300k is the sweet spot)")
+    parser.add_argument("--num_samples", type=int, default=0,
+                        help="Total sample cap. 0 = load all from KEEP_SOURCES (controlled by PER_SOURCE_CAP)")
     parser.add_argument("--balance_mode", type=str, default="capped",
                         choices=["full", "capped"],
                         help="full=use all KEEP_SOURCES samples; capped=per-source limit")
