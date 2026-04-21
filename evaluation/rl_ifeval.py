@@ -1,19 +1,22 @@
 """
-IFEval Constraint RL — GRPO-style RL with programmatic constraint checking.
+IFEval Constraint RL — GRPO-style RL aligned with IFEval's prompt_strict_acc.
 
-Instead of training on math correctness (GSM8K RL), this trains the model
-to follow explicit formatting constraints like those in IFEval:
-- Write in all caps / all lowercase
-- Include exactly N bullet points / paragraphs / sentences
-- Wrap in quotes, add postscript, section markers
-- Word count constraints
-
-The reward is 1 if ALL constraints are satisfied, 0 otherwise.
-This teaches the model to follow arbitrary formatting instructions.
+Key design choices (vs. the prior single-constraint binary-reward version):
+  1. Prompts carry 1-3 constraints at once (IFEval-style), sampled from the
+     official `instruction_following_eval.instructions_registry` (25 types).
+     This matches how IFEval builds real prompts and forces the model to
+     satisfy multiple constraints simultaneously — the behavior the
+     `prompt_strict_acc` metric actually measures.
+  2. Reward is computed with the official `test_instruction_following`
+     checker used by inspect_evals/ifeval, so training signal is identical
+     to eval scoring.
+  3. Partial credit: reward = n_satisfied / n_total + bonus * follow_all.
+     The fraction term gives a dense gradient (2/3 > 1/3 > 0/3), the bonus
+     keeps the optimum aligned with prompt_strict (follow_all = +bonus).
 
 Usage:
     python evaluation/rl_ifeval.py \\
-        --model meta-llama/Llama-3.1-8B \\
+        --model meta-llama/Llama-3.2-3B \\
         --resume_from "tinker://..._state" \\
         --num_iterations 30 \\
         --checkpoint_name exp_ifeval_rl
@@ -23,7 +26,6 @@ import argparse
 import json
 import os
 import random
-import re
 
 import numpy as np
 import tinker
@@ -33,6 +35,13 @@ from tinker.types import TensorData
 from tinker_cookbook import model_info, renderers
 from tinker_cookbook.tokenizer_utils import get_tokenizer
 
+from instruction_following_eval import instructions_registry
+from instruction_following_eval.evaluation import (
+    InputExample,
+    ensure_nltk_resource,
+    test_instruction_following,
+)
+
 MODEL_3B = "meta-llama/Llama-3.2-3B"
 MODEL_8B = "meta-llama/Llama-3.1-8B"
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -40,70 +49,24 @@ SEED = 42
 
 
 # ============================================================
-# Constraint definitions and checkers
+# Multi-constraint prompt generation using the official IFEval
+# instructions_registry. Each instruction's build_description()
+# auto-samples valid kwargs, so we don't need per-type sampling code.
 # ============================================================
 
-CONSTRAINTS = [
-    {
-        "template": "Your entire response should be in English, and in all capital letters.",
-        "check": lambda r: r == r.upper() and len(r) > 20,
-        "params": None,
-    },
-    {
-        "template": "Your entire response should be in English, and in all lowercase letters. No capital letters are allowed.",
-        "check": lambda r: r == r.lower() and len(r) > 20,
-        "params": None,
-    },
-    {
-        "template": "Your response must contain exactly {n} paragraphs. Paragraphs are separated by two newlines.",
-        "check": lambda r, n: len([p for p in r.split('\n\n') if p.strip()]) == n,
-        "params": [2, 3, 4, 5],
-    },
-    {
-        "template": "Include exactly {n} bullet points in your response. Use the markdown bullet points such as: * This is a bullet point.",
-        "check": lambda r, n: len(re.findall(r'^\* ', r, re.MULTILINE)) == n,
-        "params": [3, 4, 5, 6],
-    },
-    {
-        "template": "Wrap your entire response with double quotation marks.",
-        "check": lambda r: r.strip().startswith('"') and r.strip().endswith('"'),
-        "params": None,
-    },
-    {
-        "template": "Finish your response with the exact phrase: Is there anything else I can help with?",
-        "check": lambda r: r.strip().endswith("Is there anything else I can help with?"),
-        "params": None,
-    },
-    {
-        "template": "At the end of your response, please explicitly add a postscript starting with P.S.",
-        "check": lambda r: "P.S." in r or "P.S " in r,
-        "params": None,
-    },
-    {
-        "template": "Your answer must contain a title, wrapped in double angular brackets, such as <<poem of joy>>.",
-        "check": lambda r: "<<" in r and ">>" in r,
-        "params": None,
-    },
-    {
-        "template": "Your response must have {n} sections. Mark the beginning of each section with SECTION X.",
-        "check": lambda r, n: len(re.findall(r'SECTION \d', r)) >= n,
-        "params": [2, 3, 4],
-    },
-    {
-        "template": "Give two different responses. Responses and only responses should be separated by 6 asterisks: ******.",
-        "check": lambda r: "******" in r,
-        "params": None,
-    },
-    {
-        "template": "Answer with at least {n} words.",
-        "check": lambda r, n: len(r.split()) >= n,
-        "params": [50, 100, 200],
-    },
-    {
-        "template": "Your response should contain {n} or fewer sentences.",
-        "check": lambda r, n: len([s for s in re.split(r'[.!?]+', r) if s.strip()]) <= n,
-        "params": [2, 3, 5],
-    },
+# Instruction types that don't compose well with free-form topic responses
+# (they constrain the prompt itself or require specific content structure
+# incompatible with a general "write about X" format).
+_EXCLUDED_INST_IDS = {
+    "combination:repeat_prompt",        # asks model to repeat the prompt verbatim
+    "detectable_format:json_format",    # forces entire response to be JSON
+    "detectable_format:constrained_response",  # "pick from (yes/no/maybe)"
+    "language:response_language",       # non-English languages; conflicts with topic
+}
+
+INSTRUCTION_IDS = [
+    iid for iid in instructions_registry.INSTRUCTION_DICT.keys()
+    if iid not in _EXCLUDED_INST_IDS
 ]
 
 TOPICS = [
@@ -130,35 +93,72 @@ TOPICS = [
 ]
 
 
-def check_constraint(response, constraint, param):
-    """Check if a response satisfies a constraint. Returns reward (0 or 1)."""
-    try:
-        if param is None:
-            return 1.0 if constraint["check"](response) else 0.0
-        else:
-            return 1.0 if constraint["check"](response, param) else 0.0
-    except Exception:
-        return 0.0
-
-
-def generate_constrained_prompt(rng):
-    """Generate a random prompt with a constraint."""
+def generate_constrained_prompt(rng, min_constraints=1, max_constraints=3):
+    """Sample a topic + 1-3 distinct IFEval constraints; return prompt
+    plus metadata needed to score with test_instruction_following."""
     topic = rng.choice(TOPICS)
-    constraint = rng.choice(CONSTRAINTS)
-    params = constraint["params"]
-    param = rng.choice(params) if params else None
+    n = rng.randint(min_constraints, max_constraints)
+    # Sample distinct instruction categories (family prefix before ':') to
+    # avoid contradictory pairs like two different paragraph-count rules.
+    chosen_ids = []
+    chosen_families = set()
+    shuffled = list(INSTRUCTION_IDS)
+    rng.shuffle(shuffled)
+    for iid in shuffled:
+        fam = iid.split(":")[0]
+        if fam in chosen_families:
+            continue
+        chosen_ids.append(iid)
+        chosen_families.add(fam)
+        if len(chosen_ids) >= n:
+            break
 
-    if param is not None:
-        constraint_text = constraint["template"].format(n=param)
-    else:
-        constraint_text = constraint["template"]
+    descriptions = []
+    kwargs_list = []
+    for iid in chosen_ids:
+        cls = instructions_registry.INSTRUCTION_DICT[iid]
+        # Per-instruction RNG seed so repeated (topic, iid) pairs get
+        # different kwargs across iters.
+        inst = cls(iid)
+        desc = inst.build_description()          # auto-samples valid kwargs
+        kwargs = inst.get_instruction_args() or {}
+        # Drop None values (same cleanup inspect_evals does in record_to_sample)
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        descriptions.append(desc)
+        kwargs_list.append(kwargs)
 
-    prompt = f"{topic}. {constraint_text}"
-    return prompt, constraint, param
+    prompt = f"{topic}. " + " ".join(descriptions)
+    return prompt, chosen_ids, kwargs_list
+
+
+def score_response(response_text, instruction_id_list, kwargs_list, strict_bonus=0.5):
+    """Return (partial_reward, strict_reward, combined_reward, n_satisfied, n_total).
+
+    - partial_reward  = n_satisfied / n_total               (dense signal)
+    - strict_reward   = 1.0 iff all constraints satisfied   (prompt_strict_acc aligned)
+    - combined_reward = partial_reward + strict_bonus * strict_reward
+    """
+    try:
+        ex = InputExample(
+            key=0,
+            instruction_id_list=instruction_id_list,
+            prompt="",  # not used by checkers that don't reference prompt
+            kwargs=kwargs_list,
+        )
+        out = test_instruction_following(ex, response_text, strict=True)
+        flags = list(out.follow_instruction_list)
+        n_total = len(flags)
+        n_satisfied = sum(1 for f in flags if f)
+        partial = n_satisfied / n_total if n_total > 0 else 0.0
+        strict = 1.0 if out.follow_all_instructions else 0.0
+        combined = partial + strict_bonus * strict
+        return partial, strict, combined, n_satisfied, n_total
+    except Exception:
+        return 0.0, 0.0, 0.0, 0, len(instruction_id_list)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="IFEval Constraint RL")
+    parser = argparse.ArgumentParser(description="IFEval Constraint RL (prompt_strict-aligned)")
     parser.add_argument("--resume_from", type=str, required=True)
     parser.add_argument("--num_iterations", type=int, default=30)
     parser.add_argument("--num_prompts_per_iter", type=int, default=8)
@@ -170,6 +170,13 @@ def main():
     parser.add_argument("--no_publish", action="store_true")
     parser.add_argument("--model", type=str, default=MODEL_8B,
                         choices=[MODEL_3B, MODEL_8B])
+    parser.add_argument("--min_constraints", type=int, default=1,
+                        help="Min # of constraints per prompt")
+    parser.add_argument("--max_constraints", type=int, default=3,
+                        help="Max # of constraints per prompt (IFEval prompts typically have 1-3)")
+    parser.add_argument("--strict_bonus", type=float, default=0.5,
+                        help="Extra reward when ALL constraints satisfied (prompt_strict alignment). "
+                             "reward = n_satisfied/n_total + strict_bonus * follow_all")
     args = parser.parse_args()
 
     MODEL = args.model
@@ -178,6 +185,8 @@ def main():
     renderer_name = model_info.get_recommended_renderer_name(MODEL)
     renderer = renderers.get_renderer(renderer_name, tokenizer)
     print(f"Renderer: {renderer_name}")
+
+    ensure_nltk_resource()  # required before calling test_instruction_following
 
     sc = tinker.ServiceClient()
     print(f"Resuming from: {args.resume_from}")
@@ -189,9 +198,14 @@ def main():
     print(f"\nIFEval Constraint RL: {args.num_iterations} iterations")
     print(f"  Prompts per iter: {args.num_prompts_per_iter}")
     print(f"  Samples per prompt: {args.num_samples_per_prompt}")
+    print(f"  Constraints per prompt: {args.min_constraints}-{args.max_constraints}")
+    print(f"  Reward: n_satisfied/n_total + {args.strict_bonus} * follow_all  (prompt_strict aligned)")
+    print(f"  Using {len(INSTRUCTION_IDS)} IFEval instruction types")
     print(f"  LR: {args.lr}, temperature: {args.temperature}")
 
-    rewards_history = []
+    rewards_history = []      # combined reward (for logging continuity)
+    strict_history = []       # fraction of samples that satisfy ALL constraints
+    partial_history = []      # fraction of individual constraints satisfied
     rng = random.Random(SEED + 200)
 
     for iteration in range(args.num_iterations):
@@ -202,10 +216,16 @@ def main():
         sampling_client = sc.create_sampling_client(model_path=ckpt.path)
 
         all_datums = []
-        iter_rewards = []
+        iter_combined = []
+        iter_strict = []
+        iter_partial = []
 
         for _ in range(args.num_prompts_per_iter):
-            prompt_text, constraint, param = generate_constrained_prompt(rng)
+            prompt_text, inst_ids, kwargs_list = generate_constrained_prompt(
+                rng,
+                min_constraints=args.min_constraints,
+                max_constraints=args.max_constraints,
+            )
 
             # Build prompt tokens
             conversation = [{"role": "user", "content": prompt_text}]
@@ -224,31 +244,35 @@ def main():
                 num_samples=args.num_samples_per_prompt,
             ).result()
 
-            # Compute rewards
+            # Compute rewards using the official IFEval checker
             sample_rewards = []
             sample_data = []
             for seq in result.sequences:
                 response_tokens = list(seq.tokens)
                 response_logprobs = list(seq.logprobs) if seq.logprobs else [0.0] * len(response_tokens)
                 response_text = tokenizer.decode(response_tokens)
-                reward = check_constraint(response_text, constraint, param)
-                sample_rewards.append(reward)
+                partial, strict, combined, n_sat, n_tot = score_response(
+                    response_text, inst_ids, kwargs_list, strict_bonus=args.strict_bonus
+                )
+                sample_rewards.append(combined)
+                iter_partial.append(partial)
+                iter_strict.append(strict)
                 sample_data.append((response_tokens, response_logprobs))
 
-            # Compute advantages — use reward-centered approach
-            # For binary rewards: use reward directly as advantage (1→positive, 0→negative)
-            # This ensures learning even when all samples agree
+            # GRPO advantage: normalize within the group of samples for this prompt
             mean_r = np.mean(sample_rewards)
-            if np.std(sample_rewards) > 1e-6:
-                # Normal case: normalize within group
-                std_r = np.std(sample_rewards)
+            std_r = np.std(sample_rewards)
+            if std_r > 1e-6:
                 advantages = [(r - mean_r) / std_r for r in sample_rewards]
             else:
-                # All same: use (reward - 0.5) as advantage so model learns
-                # from both successes (advantage > 0) and failures (advantage < 0)
-                advantages = [r - 0.5 for r in sample_rewards]
+                # All samples got the same reward — shift so both directions are
+                # explored. Center at the midpoint of the combined-reward range
+                # [0, 1 + strict_bonus] so high uniform rewards still push up
+                # while low uniform rewards push down.
+                mid = (1.0 + args.strict_bonus) / 2.0
+                advantages = [r - mid for r in sample_rewards]
 
-            iter_rewards.extend(sample_rewards)
+            iter_combined.extend(sample_rewards)
 
             # Build datums
             for (response_tokens, response_logprobs), advantage in zip(sample_data, advantages):
@@ -281,12 +305,18 @@ def main():
                 tc.forward_backward(batch, loss_fn="importance_sampling").result()
                 tc.optim_step(adam_params).result()
 
-        avg_reward = np.mean(iter_rewards) if iter_rewards else 0.0
-        rewards_history.append(avg_reward)
+        avg_combined = float(np.mean(iter_combined)) if iter_combined else 0.0
+        avg_strict = float(np.mean(iter_strict)) if iter_strict else 0.0
+        avg_partial = float(np.mean(iter_partial)) if iter_partial else 0.0
+        rewards_history.append(avg_combined)
+        strict_history.append(avg_strict)
+        partial_history.append(avg_partial)
         print(f"  Iter {iteration+1}/{args.num_iterations} | "
-              f"Constraint satisfaction: {avg_reward:.3f} | "
+              f"prompt_strict(train): {avg_strict:.3f} | "
+              f"inst_strict(train): {avg_partial:.3f} | "
+              f"combined: {avg_combined:.3f} | "
               f"Datums: {len(all_datums)} | "
-              f"Running avg: {np.mean(rewards_history[-10:]):.3f}")
+              f"Running strict: {np.mean(strict_history[-10:]):.3f}")
 
     # Save
     print(f"\nSaving checkpoint '{args.checkpoint_name}'...")
@@ -307,8 +337,15 @@ def main():
         "checkpoint_path": checkpoint_path,
         "state_path": state_path,
         "base_model": MODEL,
-        "rl_type": "ifeval_constraint",
-        "final_constraint_satisfaction": rewards_history[-1] if rewards_history else 0,
+        "rl_type": "ifeval_constraint_multi",
+        "min_constraints": args.min_constraints,
+        "max_constraints": args.max_constraints,
+        "strict_bonus": args.strict_bonus,
+        "final_prompt_strict": strict_history[-1] if strict_history else 0,
+        "final_inst_strict": partial_history[-1] if partial_history else 0,
+        "final_combined_reward": rewards_history[-1] if rewards_history else 0,
+        "prompt_strict_history": strict_history,
+        "inst_strict_history": partial_history,
         "rewards_history": rewards_history,
     }
     with open(os.path.join(EVAL_DIR, "checkpoint_info.json"), "w") as f:
