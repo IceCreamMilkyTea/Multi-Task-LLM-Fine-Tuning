@@ -1,6 +1,6 @@
 {
-  "checkpoint_path": "tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/sampler_weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096",
-  "state_path": "tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096_state",
+  "checkpoint_path": "tinker://2f529c24-88ee-58c0-8c18-15b8d0bbb547:train:0/sampler_weights/exp_0421_8b_51resume_math30k_code30k_ml4096",
+  "state_path": "tinker://2f529c24-88ee-58c0-8c18-15b8d0bbb547:train:0/weights/exp_0421_8b_51resume_math30k_code30k_ml4096_state",
   "base_model": "meta-llama/Llama-3.1-8B",
   "renderer_name": "role_colon",
   "training": {
@@ -10,8 +10,8 @@
     "lora_rank": 64,
     "gsm8k_samples": 7469,
     "tulu_samples": 6067,
-    "code_samples": 10000,
-    "total_samples": 56516,
+    "code_samples": 5000,
+    "total_samples": 111516,
     "filter_quality": true,
     "curriculum": false,
     "stage2_task": null
