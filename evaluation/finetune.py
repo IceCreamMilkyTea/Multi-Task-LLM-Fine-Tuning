@@ -309,10 +309,10 @@ def main():
     
     # ===== 数据配置 =====
     parser.add_argument("--num_samples", type=int, default=0,
-                        help="Total sample cap. 0 = load all from KEEP_SOURCES (controlled by PER_SOURCE_CAP)")
-    parser.add_argument("--balance_mode", type=str, default="capped",
+                        help="Total sample cap. 0 = no limit")
+    parser.add_argument("--balance_mode", type=str, default="full",
                         choices=["full", "capped"],
-                        help="full=use all KEEP_SOURCES samples; capped=per-source limit")
+                        help="full=keep Tulu 3 original proportions; capped=per-source limit")
     
     # ===== 训练时长 =====
     parser.add_argument("--num_epochs", type=int, default=2,
