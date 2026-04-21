@@ -87,23 +87,23 @@ KEEP_SOURCES = {
 # 每个 source 的采样上限(避免某类过大)
 # 如果 balance_mode="capped",会按这个上限采样;否则保留全部
 PER_SOURCE_CAP = {
-    # 数学:留足够多,但不让任何单一 source 独占
-    "ai2-adapt-dev/personahub_math_v5_regen_149960": 50_000,
-    "ai2-adapt-dev/tulu_v3.9_open_math_2_gsm8k_50k": 49_980,     # 全保留
-    "ai2-adapt-dev/tulu_v3.9_personahub_math_interm_algebra_20k": 20_000,  # 全保留
-    "ai2-adapt-dev/numinamath_tir_math_decontaminated": 30_000,
-    "allenai/tulu-3-sft-personas-math-grade": 30_000,
-    
+    # 数学
+    "ai2-adapt-dev/personahub_math_v5_regen_149960": 25_000,
+    "ai2-adapt-dev/tulu_v3.9_open_math_2_gsm8k_50k": 25_000,
+    "ai2-adapt-dev/tulu_v3.9_personahub_math_interm_algebra_20k": 10_000,
+    "ai2-adapt-dev/numinamath_tir_math_decontaminated": 15_000,
+    "allenai/tulu-3-sft-personas-math-grade": 15_000,
+
     # 代码
-    "ai2-adapt-dev/evol_codealpaca_heval_decontaminated": 50_000,
-    "ai2-adapt-dev/personahub_code_v2_34999": 34_999,             # 全保留
-    
-    # IF:全保留,量本来就少
+    "ai2-adapt-dev/evol_codealpaca_heval_decontaminated": 25_000,
+    "ai2-adapt-dev/personahub_code_v2_34999": 17_500,
+
+    # IF:全保留,量本来就少且最关键
     "ai2-adapt-dev/personahub_ifdata_manual_seed_v3_29980": 29_980,
-    
-    # 通用对话:适量保留,防止模型变成"只会解题"
-    "ai2-adapt-dev/flan_v2_converted": 30_000,
-    "ai2-adapt-dev/tulu_v3.9_wildchat_100k": 20_000,
+
+    # 通用
+    "ai2-adapt-dev/flan_v2_converted": 15_000,
+    "ai2-adapt-dev/tulu_v3.9_wildchat_100k": 10_000,
     "ai2-adapt-dev/oasst1_converted": 7_132,                      # 全保留
     "ai2-adapt-dev/no_robots_converted": 9_500,                   # 全保留
 }
