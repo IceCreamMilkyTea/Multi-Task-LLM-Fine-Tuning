@@ -514,6 +514,35 @@ def load_code_conversations(num_samples=5000, filter_quality=False):
     return conversations
 
 
+def load_personahub_ifdata(num_samples=30000):
+    """Load personahub_ifdata from Tulu-3 — IFEval-specific training data.
+
+    This is the single most important source for IFEval (29,980 total samples).
+    Non-streaming load (much faster than streaming for finding specific sources).
+    """
+    print(f"  Loading personahub_ifdata from Tulu-3 (target {num_samples})...")
+    ds = load_dataset("allenai/tulu-3-sft-mixture", split="train")
+
+    target_source = "ai2-adapt-dev/personahub_ifdata_manual_seed_v3_29980"
+    conversations = []
+    for example in ds:
+        if example.get("source", "") != target_source:
+            continue
+        msgs = example.get("messages", [])
+        if len(msgs) < 2 or msgs[0]["role"] != "user":
+            continue
+        convo = [
+            {"role": m["role"], "content": m["content"]}
+            for m in msgs if m["role"] in ("user", "assistant")
+        ]
+        if convo and convo[0]["role"] == "user":
+            conversations.append(convo)
+        if len(conversations) >= num_samples:
+            break
+    print(f"    Loaded {len(conversations)} personahub_ifdata conversations")
+    return conversations
+
+
 def main():
     parser = argparse.ArgumentParser(description="Train, save, and publish a checkpoint")
     parser.add_argument("--num_steps", type=int, default=1000, help="Number of training steps")
@@ -529,6 +558,9 @@ def main():
     parser.add_argument("--tulu_samples", type=int, default=10000, help="Number of Tulu-3 samples")
     parser.add_argument("--code_samples", type=int, default=5000, help="Number of code samples")
     parser.add_argument("--max_length", type=int, default=1024, help="Max sequence length")
+    parser.add_argument("--beta2", type=float, default=0.95, help="Adam beta2 (0.95 for small bsz, 0.999 for large)")
+    parser.add_argument("--ifdata_samples", type=int, default=0,
+                        help="Load N personahub_ifdata samples from Tulu-3 (IFEval-specific)")
     parser.add_argument("--tulu_skip", type=int, default=0,
                         help="Skip first N Tulu samples to get diverse sources (flan_v2 starts ~5k)")
     # Advanced methods
@@ -609,18 +641,23 @@ def main():
     if args.ifeval_augment > 0:
         ifeval_augmented = generate_ifeval_augmented_data(args.ifeval_augment)
 
+    # personahub_ifdata (real IFEval-style data from Tulu-3)
+    ifdata_convos = []
+    if args.ifdata_samples > 0:
+        ifdata_convos = load_personahub_ifdata(args.ifdata_samples)
+
     # Combine: curriculum (easy→hard) or random shuffle
     if args.curriculum:
         print("Applying curriculum learning (easy → hard)...")
-        all_convos = sort_curriculum(gsm8k_convos, code_convos, tulu_convos) + ifeval_augmented
+        all_convos = sort_curriculum(gsm8k_convos, code_convos, tulu_convos) + ifeval_augmented + ifdata_convos
     else:
-        all_convos = gsm8k_convos + tulu_convos + code_convos + ifeval_augmented
+        all_convos = gsm8k_convos + tulu_convos + code_convos + ifeval_augmented + ifdata_convos
         random.seed(SEED)
         random.shuffle(all_convos)
 
     print(f"Total conversations: {len(all_convos)} "
           f"(GSM8K: {len(gsm8k_convos)}, Tulu: {len(tulu_convos)}, Code: {len(code_convos)}, "
-          f"IFEval-aug: {len(ifeval_augmented)})")
+          f"IFEval-aug: {len(ifeval_augmented)}, PersonaHub-IF: {len(ifdata_convos)})")
 
     # Convert to training data
     print("Preparing training data...")
@@ -650,8 +687,8 @@ def main():
     print("  Training client ready")
 
     # Train
-    adam_params = types.AdamParams(learning_rate=args.lr, beta1=0.9, beta2=0.95, eps=1e-8)
-    print(f"\nTraining for {args.num_steps} steps (batch_size={args.batch_size}, lr={args.lr})...")
+    adam_params = types.AdamParams(learning_rate=args.lr, beta1=0.9, beta2=args.beta2, eps=1e-8)
+    print(f"\nTraining for {args.num_steps} steps (batch_size={args.batch_size}, lr={args.lr}, beta2={args.beta2})...")
 
     for step in range(args.num_steps):
         # Sample a random batch from all_data
