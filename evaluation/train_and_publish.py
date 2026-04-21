@@ -543,6 +543,44 @@ def load_personahub_ifdata(num_samples=30000):
     return conversations
 
 
+def load_tulu_by_sources(source_caps, _ds_cache=[]):
+    """Load specific sources from Tulu-3 with per-source sample caps.
+
+    Args:
+        source_caps: dict of {source_name: max_samples}
+    Returns:
+        list of conversations
+    """
+    if not _ds_cache:
+        print("  Loading Tulu-3 dataset (cached)...")
+        _ds_cache.append(load_dataset("allenai/tulu-3-sft-mixture", split="train"))
+    ds = _ds_cache[0]
+
+    from collections import Counter
+    counts = Counter()
+    conversations = []
+    for example in ds:
+        source = example.get("source", "")
+        if source not in source_caps:
+            continue
+        if counts[source] >= source_caps[source]:
+            continue
+        msgs = example.get("messages", [])
+        if len(msgs) < 2 or msgs[0]["role"] != "user":
+            continue
+        convo = [
+            {"role": m["role"], "content": m["content"]}
+            for m in msgs if m["role"] in ("user", "assistant")
+        ]
+        if convo and convo[0]["role"] == "user":
+            conversations.append(convo)
+            counts[source] += 1
+    for src, cnt in counts.most_common():
+        short = src.split("/")[-1][:50]
+        print(f"    {cnt:>7,} | {short}")
+    return conversations
+
+
 def main():
     parser = argparse.ArgumentParser(description="Train, save, and publish a checkpoint")
     parser.add_argument("--num_steps", type=int, default=1000, help="Number of training steps")
@@ -561,6 +599,10 @@ def main():
     parser.add_argument("--beta2", type=float, default=0.95, help="Adam beta2 (0.95 for small bsz, 0.999 for large)")
     parser.add_argument("--ifdata_samples", type=int, default=0,
                         help="Load N personahub_ifdata samples from Tulu-3 (IFEval-specific)")
+    parser.add_argument("--tulu_math_samples", type=int, default=0,
+                        help="Load N math samples from Tulu-3 (personahub_math + gsm8k_50k + numinamath)")
+    parser.add_argument("--tulu_code_samples", type=int, default=0,
+                        help="Load N code samples from Tulu-3 (evol_codealpaca + personahub_code)")
     parser.add_argument("--tulu_skip", type=int, default=0,
                         help="Skip first N Tulu samples to get diverse sources (flan_v2 starts ~5k)")
     # Advanced methods
@@ -646,18 +688,43 @@ def main():
     if args.ifdata_samples > 0:
         ifdata_convos = load_personahub_ifdata(args.ifdata_samples)
 
-    # Combine: curriculum (easy→hard) or random shuffle
+    # Tulu math sources (decontaminated)
+    tulu_math_convos = []
+    if args.tulu_math_samples > 0:
+        print(f"  Loading Tulu-3 math sources (target {args.tulu_math_samples})...")
+        per_source = args.tulu_math_samples // 3
+        tulu_math_convos = load_tulu_by_sources({
+            "ai2-adapt-dev/personahub_math_v5_regen_149960": per_source,
+            "ai2-adapt-dev/tulu_v3.9_open_math_2_gsm8k_50k": per_source,
+            "ai2-adapt-dev/numinamath_tir_math_decontaminated": per_source,
+        })
+        print(f"    Total Tulu math: {len(tulu_math_convos)}")
+
+    # Tulu code sources (decontaminated)
+    tulu_code_convos = []
+    if args.tulu_code_samples > 0:
+        print(f"  Loading Tulu-3 code sources (target {args.tulu_code_samples})...")
+        per_source = args.tulu_code_samples // 2
+        tulu_code_convos = load_tulu_by_sources({
+            "ai2-adapt-dev/evol_codealpaca_heval_decontaminated": per_source,
+            "ai2-adapt-dev/personahub_code_v2_34999": per_source,
+        })
+        print(f"    Total Tulu code: {len(tulu_code_convos)}")
+
+    # Combine all data sources
+    extra = ifeval_augmented + ifdata_convos + tulu_math_convos + tulu_code_convos
     if args.curriculum:
         print("Applying curriculum learning (easy → hard)...")
-        all_convos = sort_curriculum(gsm8k_convos, code_convos, tulu_convos) + ifeval_augmented + ifdata_convos
+        all_convos = sort_curriculum(gsm8k_convos, code_convos, tulu_convos) + extra
     else:
-        all_convos = gsm8k_convos + tulu_convos + code_convos + ifeval_augmented + ifdata_convos
+        all_convos = gsm8k_convos + tulu_convos + code_convos + extra
         random.seed(SEED)
         random.shuffle(all_convos)
 
     print(f"Total conversations: {len(all_convos)} "
           f"(GSM8K: {len(gsm8k_convos)}, Tulu: {len(tulu_convos)}, Code: {len(code_convos)}, "
-          f"IFEval-aug: {len(ifeval_augmented)}, PersonaHub-IF: {len(ifdata_convos)})")
+          f"IFEval-aug: {len(ifeval_augmented)}, PersonaHub-IF: {len(ifdata_convos)}, "
+          f"Tulu-math: {len(tulu_math_convos)}, Tulu-code: {len(tulu_code_convos)})")
 
     # Convert to training data
     print("Preparing training data...")
