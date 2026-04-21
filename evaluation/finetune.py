@@ -121,25 +121,13 @@ def load_tulu3_targeted(max_samples=None, balance_mode="capped", verbose=True):
     """
     if verbose:
         print(f"Loading allenai/tulu-3-sft-mixture (mode={balance_mode})...")
-    
-    ds = load_dataset("allenai/tulu-3-sft-mixture", split="train", streaming=True)
-    
+
+    ds = load_dataset("allenai/tulu-3-sft-mixture", split="train")
+
     conversations = []
     source_counts = Counter()
-    scanned = 0
-
-    # 计算所有source的cap总和，当全部达到cap时停止
-    total_cap = sum(PER_SOURCE_CAP.get(s, 999_999) for s in KEEP_SOURCES) if balance_mode == "capped" else None
 
     for example in ds:
-        scanned += 1
-
-        # 当所有source都达到cap时提前停止
-        if balance_mode == "capped" and len(conversations) >= (total_cap if total_cap else 999_999):
-            break
-        if max_samples and len(conversations) >= max_samples:
-            break
-
         source = example.get("source", "")
         
         # 过滤 1:只保留目标 source
@@ -169,7 +157,7 @@ def load_tulu3_targeted(max_samples=None, balance_mode="capped", verbose=True):
         source_counts[source] += 1
     
     if verbose:
-        print(f"\nScanned {scanned} examples, kept {len(conversations)}")
+        print(f"\nKept {len(conversations)} / {len(ds)} examples")
         print("Composition by source:")
         for src, count in sorted(source_counts.items(), key=lambda x: -x[1]):
             short_name = src.split("/")[-1][:55]
