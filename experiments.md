@@ -64,7 +64,13 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 43 | **exp_0418_0440b** | **500 (resume RL#42)** | **4** | **2e-5** | **32** | **—** | **80% FLAN‡+2000aug** | **—** | **46.3%§** | **57.0%§** | **47.0%§** | **50.1%§** | **★★★ BEST balanced** | JOrG1 |
 | 44 | exp_0418_0440a | 30 RL iters (resume #40) | 8 | 3e-6 | 32 | RL GSM8K | — | — | 46.3%§ | 58.0%§ | 44.5%§ | 49.6%§ | Keep | JOrG1 |
 | 45 | exp_0418_2320_rl | 30 IFEval RL (resume #43) | 8 | 5e-6 | 32 | IFEval RL | — | — | 42.7%§ | 56.0%§ | 48.2%§ | 49.0%§ | Discard | JOrG1 |
-| 46 | **exp_0418_2320_sft** | **2000 (from base)** | **4** | **1e-4** | **64** | **7469*** | **16k FLAN‡+3000aug** | **10k*** | **50.1%⁑** | **53.7%⁑** | **46.3%⁑** | **50.0%⁑** | **★★★★ BEST** | JOrG1 |
+| 46 | exp_0418_2320_sft | 2000 (from base) | 4 | 1e-4 | 64 | 7469* | 16k FLAN‡+3000aug | 10k* | 50.1%⁑ | 53.7%⁑ | 46.3%⁑ | 50.0%⁑ | Keep | JOrG1 |
+| 47 | exp_0419_0100_s2 | 1000 (resume #46) | 8 | 3e-5 | 64 | 3.4k | 27k FLAN+5000aug | 3.4k | 51.0%§ | 60.3%§ | 49.4%§ | 53.6%§ | Keep | JOrG1 |
+| 49 | exp_0419_2350_rl | 50 RL iters (resume #47) | 8 | 3e-6 | 64 | RL GSM8K | — | — | 52.7%§ | 58.3%§ | 48.2%§ | 53.1%§ | Keep | JOrG1 |
+| 50 | exp_0420_0110 | 1000 (resume RL#49) | 8 | 2e-5 | 64 | 2.5k | 29k FLAN+5000aug | 2.5k | 51.3%§ | 59.3%§ | 44.5%§ | 51.7%§ | Discard | JOrG1 |
+| 51 | **exp_0421_ifdata** | **3000 (resume #46)** | **8** | **5e-5** | **64** | **7469*** | **6k FLAN+3000aug** | **10k*** | **71.7%§** | **63.3%§** | **45.1%§** | **60.0%§** | **★★★★★ BEST** | JOrG1 |
+
+Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -159,6 +165,8 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 **exp_0418_0420** (#41) — **Change: resume from #40, even gentler lr=1e-5, 300 steps, 85% FLAN + 2000 aug.** Result: IFEval 46.3% (same), lr=1e-5 too low to learn further. checkpoint: `tinker://8cce7de0-4595-507a-bfeb-fbdfb2ae3684:train:0/sampler_weights/exp_0418_0420_8b_final_push_lr1e5_steps300`
 
 **exp_0418_0351b** (#42) — **Change: RL from #39 (best IFEval augment 44.7%), 30 iters, lr=3e-6.** Result: IFEval 45.0%, GSM8K 56.3%, HumanEval 43.3%. RL maintains IFEval while pushing math. Good balance. checkpoint: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/sampler_weights/exp_0418_0351_8b_rl_from_best_ifeval` state: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/weights/exp_0418_0351_8b_rl_from_best_ifeval_state`
+
+**exp_0421_ifdata** (#51) ★★★★★ BREAKTHROUGH — **Change: resume from #46 (rank=64 base SFT), added 30k personahub_ifdata (IFEval-specific from Tulu-3), bsz=8 (from 4), β2=0.96 (from 0.95), lr=5e-5, 3000 steps, max_length=2048.** Data: 56.5k total (7.5k GSM8K + 6k FLAN + 10k Code + 3k IFEval augment + 30k personahub_ifdata). The personahub_ifdata is the single most impactful data source discovered — IFEval strict jumped from 50.1% to 71.7% (+21.6pp!). GSM8K also improved to 63.3% (+9.6pp). HumanEval maintained at 45.1%. checkpoint: `tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/sampler_weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096` state: `tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096_state`
 
 ## Analysis
 
