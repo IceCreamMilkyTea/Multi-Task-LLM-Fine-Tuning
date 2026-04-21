@@ -339,7 +339,11 @@ def main():
     # ===== Sequence length =====
     parser.add_argument("--max_length", type=int, default=4096,
                         help="Max seq length (Tulu 3 = 4096, don't use 1024!)")
-    
+
+    # ===== Intermediate checkpointing =====
+    parser.add_argument("--save_every", type=int, default=200,
+                        help="Save intermediate checkpoint every N optim steps (0=disabled)")
+
     # ===== Checkpointing =====
     parser.add_argument("--checkpoint_name", type=str, default="tulu_aligned_sft")
     parser.add_argument("--no_publish", action="store_true")
@@ -517,6 +521,14 @@ def main():
                   f"LR: {current_lr:.2e} | "
                   f"Loss: {avg_loss:.4f} (ma{ma_window}: {ma_loss:.4f}) | "
                   f"ETA: {eta_sec/60:.1f}min")
+
+        # Intermediate checkpoint saving
+        if args.save_every > 0 and (logical_step + 1) % args.save_every == 0 and (logical_step + 1) < total_logical_steps:
+            step_name = f"{args.checkpoint_name}_step{logical_step+1}"
+            print(f"  [Saving intermediate checkpoint: {step_name}]")
+            mid_ckpt = tc.save_weights_for_sampler(name=step_name).result()
+            mid_state = tc.save_state(step_name + "_state").result()
+            print(f"  [Saved: {mid_ckpt.path}]")
     
     total_time = time.time() - start_time
     print(f"\n[Training complete] Total time: {total_time/60:.1f} minutes")
