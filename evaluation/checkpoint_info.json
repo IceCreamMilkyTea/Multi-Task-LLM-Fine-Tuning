@@ -1,20 +1,20 @@
 {
-  "checkpoint_path": "tinker://6dc6a3a1-13e3-56d4-8a73-36287248b2e4:train:0/sampler_weights/exp_0420_0110_8b_sft_from_rl49",
-  "state_path": "tinker://6dc6a3a1-13e3-56d4-8a73-36287248b2e4:train:0/weights/exp_0420_0110_8b_sft_from_rl49_state",
+  "checkpoint_path": "tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/sampler_weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096",
+  "state_path": "tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096_state",
   "base_model": "meta-llama/Llama-3.1-8B",
   "renderer_name": "role_colon",
   "training": {
-    "num_steps": 1000,
-    "batch_size": 4,
-    "learning_rate": 2e-05,
+    "num_steps": 3000,
+    "batch_size": 8,
+    "learning_rate": 5e-05,
     "lora_rank": 64,
-    "gsm8k_samples": 2544,
-    "tulu_samples": 28842,
-    "code_samples": 2544,
-    "total_samples": 38930,
+    "gsm8k_samples": 7469,
+    "tulu_samples": 6067,
+    "code_samples": 10000,
+    "total_samples": 56516,
     "filter_quality": true,
     "curriculum": false,
-    "stage2_task": "tulu"
+    "stage2_task": null
   },
   "published": true
 }
