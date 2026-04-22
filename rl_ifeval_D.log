@@ -1,0 +1,72 @@
+Model: meta-llama/Llama-3.1-8B
+Renderer: role_colon
+Resuming from: tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096_state
+Training client ready
+
+IFEval Constraint RL: 60 iterations
+  Prompts per iter: 4
+  Samples per prompt: 16
+  Constraints per prompt: 1-3
+  Reward: n_satisfied/n_total + 0.5 * follow_all  (prompt_strict aligned)
+  Using 21 IFEval instruction types
+  LR: 3e-06, temperature: 1.0
+Loading diverse prompts from tatsu-lab/alpaca...
+Loaded 8000 diverse prompts
+  Iter 1/60 | prompt_strict(train): 0.344 | inst_strict(train): 0.422 | combined: 0.594 | Datums: 64 | Running strict: 0.344
+  Iter 2/60 | prompt_strict(train): 0.500 | inst_strict(train): 0.521 | combined: 0.771 | Datums: 64 | Running strict: 0.422
+  Iter 3/60 | prompt_strict(train): 0.250 | inst_strict(train): 0.612 | combined: 0.737 | Datums: 64 | Running strict: 0.365
+  Iter 4/60 | prompt_strict(train): 0.531 | inst_strict(train): 0.672 | combined: 0.938 | Datums: 64 | Running strict: 0.406
+  Iter 5/60 | prompt_strict(train): 0.234 | inst_strict(train): 0.320 | combined: 0.438 | Datums: 64 | Running strict: 0.372
+  Iter 6/60 | prompt_strict(train): 0.047 | inst_strict(train): 0.448 | combined: 0.471 | Datums: 64 | Running strict: 0.318
+Traceback (most recent call last):
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/api_future_impl.py", line 125, in _result_async
+    response = await client.futures.with_raw_response.retrieve(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/_response.py", line 786, in wrapped
+    return cast(AsyncAPIResponse[R], await func(*args, **kwargs))
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/resources/futures.py", line 74, in retrieve
+    await self._post(
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/_base_client.py", line 1230, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/_base_client.py", line 1031, in request
+    raise self._make_status_error_from_response(err.response) from None
+tinker.APIStatusError: Error code: 410 - {'error': 'Request finished, but no response was provided.'}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/evaluation/rl_ifeval.py", line 365, in <module>
+    main()
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/evaluation/rl_ifeval.py", line 312, in main
+    tc.forward_backward(batch, loss_fn="importance_sampling").result()
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/public_interfaces/api_future.py", line 127, in result
+    return self._future.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.11/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/telemetry.py", line 384, in _awrapper
+    return await cast(Callable[..., Awaitable[R]], func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/public_interfaces/training_client.py", line 323, in _forward_backward_async
+    return await _CombinedAPIFuture(futures, combine_fwd_bwd_output_results, self.holder)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/api_future_impl.py", line 332, in result_async
+    results = await asyncio.gather(*[future.result_async(timeout) for future in self.futures])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/api_future_impl.py", line 307, in result_async
+    return await asyncio.wait_for(self._future, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.11/asyncio/tasks.py", line 452, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/public_interfaces/api_future.py", line 132, in result_async
+    return await asyncio.wrap_future(self._future)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weiyuhan/Downloads/CPS572_Sp26_mini_project-main/.venv/lib/python3.11/site-packages/tinker/lib/api_future_impl.py", line 182, in _result_async
+    raise RetryableException(
+tinker.lib.retryable_exception.RetryableException: Promise expired/broken for request 13431167-d42e-586f-8204-f03a0a26ae38:train:0:112

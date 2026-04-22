@@ -30,6 +30,7 @@ import random
 from dotenv import load_dotenv
 load_dotenv()
 
+from datasets import load_dataset
 import numpy as np
 import tinker
 import torch
@@ -72,34 +73,37 @@ INSTRUCTION_IDS = [
     if iid not in _EXCLUDED_INST_IDS
 ]
 
-TOPICS = [
-    "Explain the water cycle",
-    "Describe the benefits of exercise",
-    "Write about the history of computers",
-    "Explain how photosynthesis works",
-    "Describe the solar system",
-    "Write about healthy eating habits",
-    "Explain the importance of recycling",
-    "Describe how airplanes fly",
-    "Explain how the internet works",
-    "Describe the life cycle of a butterfly",
-    "Write about different types of energy",
-    "Explain what machine learning is",
-    "Write about the importance of sleep",
-    "Explain how vaccines work",
-    "Explain the greenhouse effect",
-    "Describe how electric cars work",
-    "Explain the concept of gravity",
-    "Describe the process of evolution",
-    "Write about climate change",
-    "Explain how batteries work",
-]
+_RL_PROMPTS = None
+
+
+def _load_diverse_prompts(num_prompts: int = 8000) -> list[str]:
+    """Load diverse user prompts from tatsu-lab/alpaca (52k instructions, no IFEval overlap)."""
+    print(f"Loading diverse prompts from tatsu-lab/alpaca...")
+    ds = load_dataset("tatsu-lab/alpaca", split="train")
+    prompts = []
+    for ex in ds:
+        instruction = ex["instruction"].strip()
+        inp = (ex.get("input") or "").strip()
+        text = f"{instruction}\n\n{inp}" if inp else instruction
+        if 20 <= len(text) <= 400:
+            prompts.append(text)
+        if len(prompts) >= num_prompts:
+            break
+    print(f"Loaded {len(prompts)} diverse prompts")
+    return prompts
+
+
+def get_rl_prompts() -> list[str]:
+    global _RL_PROMPTS
+    if _RL_PROMPTS is None:
+        _RL_PROMPTS = _load_diverse_prompts()
+    return _RL_PROMPTS
 
 
 def generate_constrained_prompt(rng, min_constraints=1, max_constraints=3):
-    """Sample a topic + 1-3 distinct IFEval constraints; return prompt
+    """Sample a real user prompt + 1-3 distinct IFEval constraints; return prompt
     plus metadata needed to score with test_instruction_following."""
-    topic = rng.choice(TOPICS)
+    topic = rng.choice(get_rl_prompts())
     n = rng.randint(min_constraints, max_constraints)
     # Sample distinct instruction categories (family prefix before ':') to
     # avoid contradictory pairs like two different paragraph-count rules.
@@ -165,9 +169,9 @@ def main():
     parser.add_argument("--resume_from", type=str, required=True)
     parser.add_argument("--num_iterations", type=int, default=30)
     parser.add_argument("--num_prompts_per_iter", type=int, default=8)
-    parser.add_argument("--num_samples_per_prompt", type=int, default=4)
+    parser.add_argument("--num_samples_per_prompt", type=int, default=8)
     parser.add_argument("--lr", type=float, default=3e-6)
-    parser.add_argument("--max_new_tokens", type=int, default=512)
+    parser.add_argument("--max_new_tokens", type=int, default=256)
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--checkpoint_name", type=str, default="exp_ifeval_rl")
     parser.add_argument("--no_publish", action="store_true")
@@ -190,6 +194,7 @@ def main():
     print(f"Renderer: {renderer_name}")
 
     ensure_nltk_resource()  # required before calling test_instruction_following
+    get_rl_prompts()  # pre-load dataset before opening training session
 
     sc = tinker.ServiceClient()
     print(f"Resuming from: {args.resume_from}")
@@ -300,13 +305,13 @@ def main():
                 )
                 all_datums.append(datum)
 
-        # Train
+        # Train: accumulate all gradients first, then one optimizer step
         if len(all_datums) > 0:
             batch_size = 4
             for i in range(0, len(all_datums), batch_size):
                 batch = all_datums[i:i + batch_size]
                 tc.forward_backward(batch, loss_fn="importance_sampling").result()
-                tc.optim_step(adam_params).result()
+            tc.optim_step(adam_params).result()
 
         avg_combined = float(np.mean(iter_combined)) if iter_combined else 0.0
         avg_strict = float(np.mean(iter_strict)) if iter_strict else 0.0

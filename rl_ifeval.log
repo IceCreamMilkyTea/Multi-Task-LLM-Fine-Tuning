@@ -1,0 +1,49 @@
+Model: meta-llama/Llama-3.1-8B
+Renderer: role_colon
+Resuming from: tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/weights/exp_0422_code_sft_B_state
+Training client ready
+
+IFEval Constraint RL: 30 iterations
+  Prompts per iter: 8
+  Samples per prompt: 4
+  Constraints per prompt: 1-3
+  Reward: n_satisfied/n_total + 0.5 * follow_all  (prompt_strict aligned)
+  Using 21 IFEval instruction types
+  LR: 3e-06, temperature: 1.0
+  Iter 1/30 | prompt_strict(train): 0.344 | inst_strict(train): 0.479 | combined: 0.651 | Datums: 32 | Running strict: 0.344
+  Iter 2/30 | prompt_strict(train): 0.312 | inst_strict(train): 0.604 | combined: 0.760 | Datums: 32 | Running strict: 0.328
+  Iter 3/30 | prompt_strict(train): 0.250 | inst_strict(train): 0.510 | combined: 0.635 | Datums: 32 | Running strict: 0.302
+  Iter 4/30 | prompt_strict(train): 0.281 | inst_strict(train): 0.495 | combined: 0.635 | Datums: 32 | Running strict: 0.297
+  Iter 5/30 | prompt_strict(train): 0.344 | inst_strict(train): 0.573 | combined: 0.745 | Datums: 32 | Running strict: 0.306
+  Iter 6/30 | prompt_strict(train): 0.188 | inst_strict(train): 0.422 | combined: 0.516 | Datums: 32 | Running strict: 0.286
+  Iter 7/30 | prompt_strict(train): 0.250 | inst_strict(train): 0.448 | combined: 0.573 | Datums: 32 | Running strict: 0.281
+  Iter 8/30 | prompt_strict(train): 0.469 | inst_strict(train): 0.594 | combined: 0.828 | Datums: 32 | Running strict: 0.305
+  Iter 9/30 | prompt_strict(train): 0.344 | inst_strict(train): 0.542 | combined: 0.714 | Datums: 32 | Running strict: 0.309
+  Iter 10/30 | prompt_strict(train): 0.281 | inst_strict(train): 0.547 | combined: 0.687 | Datums: 32 | Running strict: 0.306
+  Iter 11/30 | prompt_strict(train): 0.406 | inst_strict(train): 0.635 | combined: 0.839 | Datums: 32 | Running strict: 0.312
+  Iter 12/30 | prompt_strict(train): 0.219 | inst_strict(train): 0.469 | combined: 0.578 | Datums: 32 | Running strict: 0.303
+  Iter 13/30 | prompt_strict(train): 0.125 | inst_strict(train): 0.406 | combined: 0.469 | Datums: 32 | Running strict: 0.291
+  Iter 14/30 | prompt_strict(train): 0.438 | inst_strict(train): 0.516 | combined: 0.734 | Datums: 32 | Running strict: 0.306
+  Iter 15/30 | prompt_strict(train): 0.500 | inst_strict(train): 0.667 | combined: 0.917 | Datums: 32 | Running strict: 0.322
+  Iter 16/30 | prompt_strict(train): 0.406 | inst_strict(train): 0.562 | combined: 0.766 | Datums: 32 | Running strict: 0.344
+  Iter 17/30 | prompt_strict(train): 0.438 | inst_strict(train): 0.578 | combined: 0.797 | Datums: 32 | Running strict: 0.362
+  Iter 18/30 | prompt_strict(train): 0.156 | inst_strict(train): 0.464 | combined: 0.542 | Datums: 32 | Running strict: 0.331
+  Iter 19/30 | prompt_strict(train): 0.500 | inst_strict(train): 0.703 | combined: 0.953 | Datums: 32 | Running strict: 0.347
+  Iter 20/30 | prompt_strict(train): 0.312 | inst_strict(train): 0.635 | combined: 0.792 | Datums: 32 | Running strict: 0.350
+  Iter 21/30 | prompt_strict(train): 0.375 | inst_strict(train): 0.521 | combined: 0.708 | Datums: 32 | Running strict: 0.347
+  Iter 22/30 | prompt_strict(train): 0.375 | inst_strict(train): 0.630 | combined: 0.818 | Datums: 32 | Running strict: 0.362
+  Iter 23/30 | prompt_strict(train): 0.438 | inst_strict(train): 0.500 | combined: 0.719 | Datums: 32 | Running strict: 0.394
+  Iter 24/30 | prompt_strict(train): 0.562 | inst_strict(train): 0.740 | combined: 1.021 | Datums: 32 | Running strict: 0.406
+  Iter 25/30 | prompt_strict(train): 0.344 | inst_strict(train): 0.510 | combined: 0.682 | Datums: 32 | Running strict: 0.391
+  Iter 26/30 | prompt_strict(train): 0.500 | inst_strict(train): 0.724 | combined: 0.974 | Datums: 32 | Running strict: 0.400
+  Iter 27/30 | prompt_strict(train): 0.312 | inst_strict(train): 0.458 | combined: 0.615 | Datums: 32 | Running strict: 0.388
+  Iter 28/30 | prompt_strict(train): 0.438 | inst_strict(train): 0.604 | combined: 0.823 | Datums: 32 | Running strict: 0.416
+  Iter 29/30 | prompt_strict(train): 0.031 | inst_strict(train): 0.396 | combined: 0.411 | Datums: 32 | Running strict: 0.369
+  Iter 30/30 | prompt_strict(train): 0.375 | inst_strict(train): 0.573 | combined: 0.760 | Datums: 32 | Running strict: 0.375
+
+Saving checkpoint 'exp_0422_B_ifeval_grpo'...
+  Checkpoint: tinker://7c346bd4-ce0b-5b57-b48c-085da8e23132:train:0/sampler_weights/exp_0422_B_ifeval_grpo
+  State: tinker://7c346bd4-ce0b-5b57-b48c-085da8e23132:train:0/weights/exp_0422_B_ifeval_grpo_state
+  Published!
+
+Evaluate: python evaluation/eval_all.py --checkpoint_path "tinker://7c346bd4-ce0b-5b57-b48c-085da8e23132:train:0/sampler_weights/exp_0422_B_ifeval_grpo" --base_model meta-llama/Llama-3.1-8B --limit 100

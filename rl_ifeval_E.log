@@ -1,0 +1,14 @@
+Model: meta-llama/Llama-3.1-8B
+Renderer: role_colon
+Loading diverse prompts from tatsu-lab/alpaca...
+Loaded 8000 diverse prompts
+Resuming from: tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096_state
+Training client ready
+
+IFEval Constraint RL: 60 iterations
+  Prompts per iter: 8
+  Samples per prompt: 8
+  Constraints per prompt: 1-3
+  Reward: n_satisfied/n_total + 0.5 * follow_all  (prompt_strict aligned)
+  Using 21 IFEval instruction types
+  LR: 3e-06, temperature: 1.0
