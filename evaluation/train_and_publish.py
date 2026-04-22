@@ -589,6 +589,8 @@ def main():
     parser.add_argument("--rank", type=int, default=32, help="LoRA rank")
     parser.add_argument("--checkpoint_name", type=str, default="experiment", help="Checkpoint name")
     parser.add_argument("--no_publish", action="store_true", help="Skip publishing")
+    parser.add_argument("--save_every", type=int, default=500,
+                        help="Save intermediate checkpoint every N steps (default 500)")
     parser.add_argument("--resume_from", type=str, default=None,
                         help="Resume training from a save_state checkpoint (tinker:// path)")
     # Dataset sizes
@@ -775,6 +777,14 @@ def main():
 
         if (step + 1) % 10 == 0 or step == 0:
             print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}")
+
+        # Intermediate checkpoint saving
+        if args.save_every > 0 and (step + 1) % args.save_every == 0 and (step + 1) < args.num_steps:
+            mid_name = f"{args.checkpoint_name}_step{step+1}"
+            print(f"  [Saving checkpoint: {mid_name}]")
+            mid_ckpt = tc.save_weights_for_sampler(name=mid_name).result()
+            mid_state = tc.save_state(mid_name + "_state").result()
+            print(f"  [Saved: {mid_ckpt.path}]")
 
     # Save checkpoint (inference weights)
     print(f"\nSaving checkpoint '{args.checkpoint_name}'...")
