@@ -69,11 +69,13 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 49 | exp_0419_2350_rl | 50 RL iters (resume #47) | 8 | 3e-6 | 64 | RL GSM8K | — | — | 52.7%§ | 58.3%§ | 48.2%§ | 53.1%§ | Keep | JOrG1 |
 | 50 | exp_0420_0110 | 1000 (resume RL#49) | 8 | 2e-5 | 64 | 2.5k | 29k FLAN+5000aug | 2.5k | 51.3%§ | 59.3%§ | 44.5%§ | 51.7%§ | Discard | JOrG1 |
 | 51 | **exp_0421_ifdata** | **3000 (resume #46)** | **8** | **5e-5** | **64** | **7469*** | **6k FLAN+3000aug** | **10k*** | **71.7%§** | **63.3%§** | **45.1%§** | **60.0%§** | **★★★★★ BEST** | JOrG1 |
+| 52 | exp_0422_B_ifeval_grpo | 30 IFEval RL iters (resume #51) | 8 | 3e-6 | 64 | IFEval GRPO | — | — | 69.7%§ | 63.7%§ | 48.8%§ | 60.7%§ | Discard | JOrG1 |
 
 Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
+¶ = scores from --limit 100 evaluation (least reliable)
 ‡ = FLAN-focused: skip first 5k oasst1, use flan_v2 data + max_length=2048
 § = scores from --limit 300 evaluation (more reliable than --limit 100)
 ⁑ = scores from FULL evaluation (all samples: IFEval 541, GSM8K 1319, HumanEval 164)
@@ -165,6 +167,8 @@ Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 **exp_0418_0420** (#41) — **Change: resume from #40, even gentler lr=1e-5, 300 steps, 85% FLAN + 2000 aug.** Result: IFEval 46.3% (same), lr=1e-5 too low to learn further. checkpoint: `tinker://8cce7de0-4595-507a-bfeb-fbdfb2ae3684:train:0/sampler_weights/exp_0418_0420_8b_final_push_lr1e5_steps300`
 
 **exp_0418_0351b** (#42) — **Change: RL from #39 (best IFEval augment 44.7%), 30 iters, lr=3e-6.** Result: IFEval 45.0%, GSM8K 56.3%, HumanEval 43.3%. RL maintains IFEval while pushing math. Good balance. checkpoint: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/sampler_weights/exp_0418_0351_8b_rl_from_best_ifeval` state: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/weights/exp_0418_0351_8b_rl_from_best_ifeval_state`
+
+**exp_0422_B_ifeval_grpo** (#52) — **Change: IFEval Constraint RL (GRPO-style) from #51 (exp_0421_ifdata). 30 iterations, 8 prompts/iter, 4 samples/prompt, lr=3e-6. Reward = n_satisfied/n_total + bonus for satisfying all constraints (partial credit, aligned with prompt_strict_acc).** Results (--limit 300): IFEval strict 69.7% (-2pp vs #51), GSM8K 63.7% (+0.4pp), HumanEval 48.8% (+3.7pp). Avg 60.7% (+0.7pp). IFEval RL failed to push IFEval — the RL reward signal (programmatic constraint checking) is noisy and slightly hurts the IFEval gains from personahub_ifdata. Pattern consistent with #45 (IFEval RL also hurt IFEval). checkpoint: `tinker://7c346bd4-ce0b-5b57-b48c-085da8e23132:train:0/sampler_weights/exp_0422_B_ifeval_grpo`
 
 **exp_0421_ifdata** (#51) ★★★★★ BREAKTHROUGH — **Change: resume from #46 (rank=64 base SFT), added 30k personahub_ifdata (IFEval-specific from Tulu-3), bsz=8 (from 4), β2=0.96 (from 0.95), lr=5e-5, 3000 steps, max_length=2048.** Data: 56.5k total (7.5k GSM8K + 6k FLAN + 10k Code + 3k IFEval augment + 30k personahub_ifdata). The personahub_ifdata is the single most impactful data source discovered — IFEval strict jumped from 50.1% to 71.7% (+21.6pp!). GSM8K also improved to 63.3% (+9.6pp). HumanEval maintained at 45.1%. checkpoint: `tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/sampler_weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096` state: `tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096_state`
 

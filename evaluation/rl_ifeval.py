@@ -27,6 +27,9 @@ import json
 import os
 import random
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import numpy as np
 import tinker
 import torch

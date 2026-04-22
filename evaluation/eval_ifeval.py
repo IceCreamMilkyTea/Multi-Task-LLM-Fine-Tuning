@@ -15,6 +15,9 @@ import json
 import logging
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import tinker
 from inspect_ai import eval_async
 from inspect_ai.log import read_eval_log

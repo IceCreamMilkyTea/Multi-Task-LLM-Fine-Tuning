@@ -35,6 +35,9 @@ import random
 import time
 from collections import Counter
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import numpy as np
 import tinker
 from datasets import load_dataset

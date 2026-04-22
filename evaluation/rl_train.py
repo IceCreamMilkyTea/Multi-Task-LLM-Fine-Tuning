@@ -17,6 +17,9 @@ import os
 import random
 import re
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import numpy as np
 import tinker
 import torch
