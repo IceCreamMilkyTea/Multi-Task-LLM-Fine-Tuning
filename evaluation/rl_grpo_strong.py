@@ -79,8 +79,14 @@ def _extract_number(text: str) -> Optional[str]:
     return nums[-1] if nums else None
 
 
-def reward_gsm8k(response: str, gt: Dict[str, Any]) -> float:
-    gold = str(gt.get("answer", "")).split("####")[-1].strip().replace(",", "")
+def reward_gsm8k(response: str, gt: Any) -> float:
+    # RLVR-GSM stores ground_truth as a bare string (e.g. "1104"); the
+    # original GSM8K format puts it inside {"answer": "...####1104"}.
+    if isinstance(gt, dict):
+        gold_raw = str(gt.get("answer", ""))
+    else:
+        gold_raw = str(gt)
+    gold = gold_raw.split("####")[-1].strip().replace(",", "")
     pred = _extract_number(response)
     if pred is None or gold == "":
         return 0.0
@@ -112,21 +118,66 @@ def reward_ifeval(response: str, gt: Dict[str, Any]) -> float:
         return 0.0
 
 
-def reward_humaneval(response: str, gt: Dict[str, Any]) -> float:
+def _extract_python_code(response: str) -> str:
     m = re.search(r"```(?:python)?\s*\n(.*?)```", response, re.DOTALL)
-    code = m.group(1) if m else response
-    tests = gt.get("test", "") or gt.get("tests", "") or ""
-    entry_point = gt.get("entry_point", "") or "solution"
-    if not tests:
-        return 0.0
+    return m.group(1) if m else response
+
+
+def reward_humaneval(response: str, gt: Dict[str, Any]) -> float:
+    """Run code against unit tests. Supports two GT formats:
+       (1) HumanEval-style: {"test": "<def check(fn):...>", "entry_point": "fn_name"}
+       (2) PrimeIntellect verifiable-coding-problems: gt has "test_cases":
+           [{"type": "stdin_stdout", "input": str, "output": str}, ...]
+    """
+    code = _extract_python_code(response)
+    # Format 1: HumanEval-style check()
+    tests = gt.get("test", "") or gt.get("tests", "")
+    entry_point = gt.get("entry_point", "")
+    if tests and entry_point:
+        return _run_check_style(code, tests, entry_point)
+    # Format 2: stdin/stdout test cases
+    cases = gt.get("test_cases") or []
+    if cases:
+        return _run_stdio_cases(code, cases)
+    return 0.0
+
+
+def _run_check_style(code: str, tests: str, entry_point: str) -> float:
     script = f"{code}\n\n{tests}\n\ncheck({entry_point})\n"
+    return _run_python(script, expect_zero_exit=True)
+
+
+def _run_stdio_cases(code: str, cases: List[Dict[str, str]]) -> float:
+    """Pass each case's input on stdin, compare stripped stdout to expected."""
+    n_pass = 0
+    n_total = 0
+    for c in cases:
+        if c.get("type") and c["type"] != "stdin_stdout":
+            continue
+        n_total += 1
+        try:
+            r = subprocess.run(
+                ["python", "-c", code],
+                input=c.get("input", ""),
+                capture_output=True, text=True, timeout=6,
+            )
+            actual = (r.stdout or "").strip()
+            expected = (c.get("output", "") or "").strip()
+            if actual == expected:
+                n_pass += 1
+        except Exception:
+            pass
+    return n_pass / n_total if n_total > 0 else 0.0
+
+
+def _run_python(script: str, expect_zero_exit: bool = True) -> float:
     path = None
     try:
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
             f.write(script)
             path = f.name
         r = subprocess.run(["python", path], capture_output=True, timeout=8)
-        return 1.0 if r.returncode == 0 else 0.0
+        return 1.0 if (r.returncode == 0) == expect_zero_exit else 0.0
     except Exception:
         return 0.0
     finally:
@@ -191,6 +242,69 @@ def load_rl_examples(task: str, dataset_name: Optional[str], split: str) -> List
 
 
 # ---------------------------------------------------------------------------
+# IFEval prompt synthesis — proven flow from rl_ifeval.py.
+# Builds (alpaca topic) + (1-3 IFEval constraints sampled from
+# instructions_registry) → ground_truth in the {instruction_id_list, kwargs}
+# schema that reward_ifeval expects. Avoids the schema mismatch with
+# allenai/RLVR-IFeval (which uses a custom func_name dispatch).
+# ---------------------------------------------------------------------------
+
+_EXCLUDED_INST_IDS = {
+    "combination:repeat_prompt",
+    "detectable_format:json_format",
+    "detectable_format:constrained_response",
+    "language:response_language",
+}
+_INSTRUCTION_IDS = [iid for iid in instructions_registry.INSTRUCTION_DICT.keys()
+                    if iid not in _EXCLUDED_INST_IDS]
+
+
+def _alpaca_topics(num: int = 8000) -> List[str]:
+    print("Loading alpaca topics for IFEval synthesis...")
+    ds = load_dataset("tatsu-lab/alpaca", split="train")
+    out = []
+    for ex in ds:
+        instr = ex["instruction"].strip()
+        inp = (ex.get("input") or "").strip()
+        text = f"{instr}\n\n{inp}" if inp else instr
+        if 20 <= len(text) <= 400:
+            out.append(text)
+        if len(out) >= num:
+            break
+    return out
+
+
+def synthesize_ifeval_examples(num: int, seed: int) -> List[Dict[str, Any]]:
+    rng = random.Random(seed)
+    topics = _alpaca_topics()
+    out = []
+    for _ in range(num):
+        topic = rng.choice(topics)
+        n = rng.randint(1, 3)
+        chosen, families = [], set()
+        shuf = list(_INSTRUCTION_IDS); rng.shuffle(shuf)
+        for iid in shuf:
+            fam = iid.split(":")[0]
+            if fam in families: continue
+            chosen.append(iid); families.add(fam)
+            if len(chosen) >= n: break
+        descs, kw_list = [], []
+        for iid in chosen:
+            cls = instructions_registry.INSTRUCTION_DICT[iid]
+            inst = cls(iid)
+            descs.append(inst.build_description())
+            kw = inst.get_instruction_args() or {}
+            kw_list.append({k: v for k, v in kw.items() if v is not None})
+        prompt = f"{topic}. " + " ".join(descs)
+        out.append({
+            "prompt": prompt,
+            "ground_truth": {"instruction_id_list": chosen, "kwargs": kw_list},
+        })
+    print(f"Synthesized {len(out)} IFEval prompts")
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Datum builder (matches loss_fn_inputs schema for "ppo" / "cispo" /
 # "importance_sampling" — see tinker_cookbook/rl/data_processing.py).
 # ---------------------------------------------------------------------------
@@ -231,6 +345,11 @@ def main():
     p.add_argument("--task", choices=list(REWARDS), required=True)
     p.add_argument("--dataset_name", type=str, default=None)
     p.add_argument("--dataset_split", type=str, default="train")
+    p.add_argument("--ifeval_synthesize", action="store_true",
+                   help="For --task ifeval, synthesize prompts from alpaca + "
+                        "instructions_registry instead of loading a dataset.")
+    p.add_argument("--n_synth", type=int, default=4000,
+                   help="Number of synthesized IFEval prompts to build.")
 
     p.add_argument("--model", type=str, default="meta-llama/Llama-3.1-8B")
     p.add_argument("--resume_from", type=str, required=True,
@@ -272,7 +391,10 @@ def main():
     if args.task == "ifeval":
         ensure_nltk_resource()
 
-    examples = load_rl_examples(args.task, args.dataset_name, args.dataset_split)
+    if args.task == "ifeval" and args.ifeval_synthesize:
+        examples = synthesize_ifeval_examples(args.n_synth, args.seed)
+    else:
+        examples = load_rl_examples(args.task, args.dataset_name, args.dataset_split)
     if args.max_examples > 0:
         examples = examples[:args.max_examples]
     if not examples:

@@ -9,10 +9,12 @@ NAME="${NAME:-grpo_strong_ifeval}"
 
 python -u evaluation/rl_grpo_strong.py \
     --task ifeval \
+    --ifeval_synthesize \
+    --n_synth "${N_SYNTH:-4000}" \
     --model "$MODEL" \
     --resume_from "$RESUME_FROM" \
-    --num_iterations "${ITERS:-60}" \
-    --prompts_per_iter "${PROMPTS:-16}" \
+    --num_iterations "${ITERS:-40}" \
+    --prompts_per_iter "${PROMPTS:-8}" \
     --group_size "${GROUP:-8}" \
     --ppo_epochs "${PPO_EPOCHS:-2}" \
     --mini_batch_size "${MINI_BATCH:-4}" \
@@ -21,6 +23,5 @@ python -u evaluation/rl_grpo_strong.py \
     --temperature "${TEMP:-1.0}" \
     --loss_fn "${LOSS_FN:-ppo}" \
     --kl_coef "${KL_COEF:-0.01}" \
-    --drop_zero_variance \
     --save_every 20 \
     --checkpoint_name "$NAME"
