@@ -12,6 +12,7 @@ wheels/
 # Logs
 logs/
 */logs/
+evaluation/inspect-logs/grpo_strong/
 
 # OS
 .DS_Store
