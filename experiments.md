@@ -69,8 +69,13 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 49 | exp_0419_2350_rl | 50 RL iters (resume #47) | 8 | 3e-6 | 64 | RL GSM8K | — | — | 52.7%§ | 58.3%§ | 48.2%§ | 53.1%§ | Keep | JOrG1 |
 | 50 | exp_0420_0110 | 1000 (resume RL#49) | 8 | 2e-5 | 64 | 2.5k | 29k FLAN+5000aug | 2.5k | 51.3%§ | 59.3%§ | 44.5%§ | 51.7%§ | Discard | JOrG1 |
 | 51 | **exp_0421_ifdata** | **3000 (resume #46)** | **8** | **5e-5** | **64** | **7469*** | **6k FLAN+3000aug** | **10k*** | **71.7%§** | **63.3%§** | **45.1%§** | **60.0%§** | **★★★★★ BEST** | JOrG1 |
+| 52 | exp_0421_math_code | 3000 (resume #51) | 8 | 5e-5 | 64 | 7469* | 6k FLAN+3000aug+30k ifdata | 5k+30k tulu | 69.0%§ | 65.3%§ | 43.9%§ | 59.4%§ | Discard | JOrG1 |
+| 53A | exp_0422_code_A | 1500 (resume #51) | 8 | 5e-5 | 64 | 5k | 3.5k FLAN+1k aug+10k ifdata | 5k+30k tulu | 66.3%§ | 66.3%§ | 48.8%§ | 60.5%§ | Keep | JOrG1 |
+| 53B | **exp_0422_code_B** | **1500 (resume #51)** | **8** | **3e-5** | **64** | **5k** | **3.5k FLAN+1k aug+10k ifdata** | **5k+30k tulu** | **70.3%§** | **62.0%§** | **48.8%§** | **60.4%§** | **★★★★★ BEST balanced** | JOrG1 |
 
 Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
+Key for #52: +30k Tulu math + 30k Tulu code, max_length=4096 (math/code diluted IFEval)
+Key for #53A vs #53B: **A/B test on lr and β2.** Same data (code-heavy: 30k Tulu code). B (lr=3e-5, β2=0.97) wins — conservative params better preserve IFEval while both push HumanEval equally (+3.7pp)
 
 \* = quality-filtered data
 † = Stage 2/3: Tulu focus (oasst1 + flan_v2)
@@ -167,6 +172,12 @@ Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 **exp_0418_0351b** (#42) — **Change: RL from #39 (best IFEval augment 44.7%), 30 iters, lr=3e-6.** Result: IFEval 45.0%, GSM8K 56.3%, HumanEval 43.3%. RL maintains IFEval while pushing math. Good balance. checkpoint: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/sampler_weights/exp_0418_0351_8b_rl_from_best_ifeval` state: `tinker://ca0f37b4-6ac1-5cd8-949e-8faee6d44623:train:0/weights/exp_0418_0351_8b_rl_from_best_ifeval_state`
 
 **exp_0421_ifdata** (#51) ★★★★★ BREAKTHROUGH — **Change: resume from #46 (rank=64 base SFT), added 30k personahub_ifdata (IFEval-specific from Tulu-3), bsz=8 (from 4), β2=0.96 (from 0.95), lr=5e-5, 3000 steps, max_length=2048.** Data: 56.5k total (7.5k GSM8K + 6k FLAN + 10k Code + 3k IFEval augment + 30k personahub_ifdata). The personahub_ifdata is the single most impactful data source discovered — IFEval strict jumped from 50.1% to 71.7% (+21.6pp!). GSM8K also improved to 63.3% (+9.6pp). HumanEval maintained at 45.1%. checkpoint: `tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/sampler_weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096` state: `tinker://2bf67052-a5e8-5c15-9515-be5b322cc530:train:0/weights/exp_0421_8b_46resume_ifdata30k_bsz8_b096_state`
+
+**exp_0421_math_code** (#52) — **Change: resume from #51, added 30k Tulu math + 30k Tulu code (decontaminated), max_length=4096.** Data: 111k total. GSM8K improved to 65.3% (+2pp) but IFEval dropped to 69% (-2.7pp). The extra math/code data diluted the IFEval signal. max_length=4096 didn't help HumanEval (43.9%). checkpoint: `tinker://2f529c24-88ee-58c0-8c18-15b8d0bbb547:train:0/sampler_weights/exp_0421_8b_51resume_math30k_code30k_ml4096`
+
+**exp_0422_code_A** (#53A) — **Change: resume from #51, code-focused SFT with 30k Tulu code, lr=5e-5, β2=0.96, 1500 steps, max_length=2048.** Data: 59.5k (code 58%, IFEval 19%, math 16%). HumanEval improved to 48.8% (+3.7pp). But IFEval dropped to 66.3% — lr=5e-5 too aggressive for continuation. checkpoint: `tinker://9e51ddaf-b733-5a48-9962-f8fe4aecaeea:train:0/sampler_weights/exp_0422_code_sft_A` state: `tinker://9e51ddaf-b733-5a48-9962-f8fe4aecaeea:train:0/weights/exp_0422_code_sft_A_state`
+
+**exp_0422_code_B** (#53B) ★★★★★ — **Change: same as #53A but lr=3e-5 (lower), β2=0.97 (higher). A/B test on training conservatism.** Result: IFEval 70.3% (vs A's 66.3%), GSM8K 62.0%, HumanEval 48.8% (same as A). **Conservative params win** — lower lr + higher β2 better preserves IFEval while pushing HumanEval equally. Key learning: each successive SFT stage should use progressively lower lr and higher β2. checkpoint: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/sampler_weights/exp_0422_code_sft_B` state: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/weights/exp_0422_code_sft_B_state`
 
 ## Analysis
 
