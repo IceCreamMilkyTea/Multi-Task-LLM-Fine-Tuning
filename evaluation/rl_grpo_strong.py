@@ -437,6 +437,7 @@ def main():
 
         rollouts = []  # tuples (prompt_tokens, [(resp_tokens, resp_lp, reward)])
         all_rewards = []
+        sample_texts = []  # (iter_idx, prompt_snippet, resp_snippet, reward)
 
         for _ in range(args.prompts_per_iter):
             ex = rng.choice(examples)
@@ -464,6 +465,17 @@ def main():
                 samples.append((resp_tokens, resp_lp, r))
                 rs.append(r)
                 all_rewards.append(r)
+
+            # Dump one representative sample (the first one per prompt) so we
+            # can inspect mode collapse / reward gaming later.
+            if samples:
+                rt, _, rv = samples[0]
+                sample_texts.append({
+                    "prompt": ex["prompt"][:200],
+                    "response": tokenizer.decode(rt)[:300],
+                    "reward": rv,
+                    "group_rewards": [float(x) for x in rs],
+                })
 
             # DAPO group filtering
             if args.drop_zero_variance and float(np.std(rs)) < 1e-6:
@@ -544,6 +556,15 @@ def main():
             "loss_fn": args.loss_fn,
             "elapsed_s": round(elapsed, 1),
         }
+        # Every 5 iters, log one representative response so we can inspect
+        # for mode collapse or reward-gaming.
+        if sample_texts and ((it + 1) % 5 == 0 or it == 0):
+            s = sample_texts[0]
+            print(f"  [sample @ iter {it+1}] reward={s['reward']:.3f} "
+                  f"group={[round(x,2) for x in s['group_rewards']]}")
+            print(f"    prompt: {s['prompt'][:160]!r}")
+            print(f"    resp:   {s['response'][:200]!r}")
+
         print(f"  Iter {it+1}/{args.num_iterations} | "
               f"reward {rew_mean:.3f} ±{rew_std:.3f} | "
               f"full {strict:.3f} | "
