@@ -274,9 +274,49 @@ def _alpaca_topics(num: int = 8000) -> List[str]:
     return out
 
 
-def synthesize_ifeval_examples(num: int, seed: int) -> List[Dict[str, Any]]:
+def _is_mostly_ascii(s: str, threshold: float = 0.95) -> bool:
+    """Cheap English filter — drop Spanish/Chinese/etc. prompts from Tulu-3."""
+    if not s:
+        return False
+    n_ascii = sum(1 for c in s if ord(c) < 128)
+    return n_ascii / len(s) >= threshold
+
+
+def _tulu3_topics(num: int = 8000) -> List[str]:
+    """Higher-quality prompts than alpaca: real multi-turn instructions from
+    Tulu-3's SFT mixture (filtered to English first-turn only)."""
+    print("Loading tulu-3 SFT topics for IFEval synthesis...")
+    # Use streaming so we don't download the full ~7GB dataset.
+    ds = load_dataset("allenai/tulu-3-sft-mixture", split="train", streaming=True)
+    out = []
+    for ex in ds:
+        msgs = ex.get("messages") or []
+        if not msgs:
+            continue
+        first = msgs[0]
+        if first.get("role") != "user":
+            continue
+        text = (first.get("content") or "").strip()
+        if not (20 <= len(text) <= 400):
+            continue
+        if not _is_mostly_ascii(text):
+            continue
+        out.append(text)
+        if len(out) >= num:
+            break
+    print(f"  -> {len(out)} English prompts")
+    return out
+
+
+def synthesize_ifeval_examples(num: int, seed: int,
+                               source: str = "tulu3") -> List[Dict[str, Any]]:
     rng = random.Random(seed)
-    topics = _alpaca_topics()
+    if source == "tulu3":
+        topics = _tulu3_topics()
+    elif source == "alpaca":
+        topics = _alpaca_topics()
+    else:
+        raise ValueError(f"unknown synth source: {source!r}")
     out = []
     for _ in range(num):
         topic = rng.choice(topics)
@@ -346,8 +386,12 @@ def main():
     p.add_argument("--dataset_name", type=str, default=None)
     p.add_argument("--dataset_split", type=str, default="train")
     p.add_argument("--ifeval_synthesize", action="store_true",
-                   help="For --task ifeval, synthesize prompts from alpaca + "
-                        "instructions_registry instead of loading a dataset.")
+                   help="For --task ifeval, synthesize prompts from a topic "
+                        "source + instructions_registry.")
+    p.add_argument("--synth_source", choices=["tulu3", "alpaca"], default="tulu3",
+                   help="Topic source for IFEval synthesis. tulu3 has real "
+                        "multi-turn prompts (English-filtered), alpaca is "
+                        "older and noisier but fully downloaded.")
     p.add_argument("--n_synth", type=int, default=4000,
                    help="Number of synthesized IFEval prompts to build.")
 
@@ -392,7 +436,8 @@ def main():
         ensure_nltk_resource()
 
     if args.task == "ifeval" and args.ifeval_synthesize:
-        examples = synthesize_ifeval_examples(args.n_synth, args.seed)
+        examples = synthesize_ifeval_examples(args.n_synth, args.seed,
+                                               source=args.synth_source)
     else:
         examples = load_rl_examples(args.task, args.dataset_name, args.dataset_split)
     if args.max_examples > 0:
