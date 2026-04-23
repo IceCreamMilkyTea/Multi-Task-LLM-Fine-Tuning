@@ -518,10 +518,11 @@ def load_personahub_ifdata(num_samples=30000):
     """Load personahub_ifdata from Tulu-3 — IFEval-specific training data.
 
     This is the single most important source for IFEval (29,980 total samples).
-    Non-streaming load (much faster than streaming for finding specific sources).
+    Streaming load (non-streaming OOMs on machines with <32GB RAM because the
+    Tulu-3 mixture is ~1M rows). The filter is cheap so throughput is fine.
     """
     print(f"  Loading personahub_ifdata from Tulu-3 (target {num_samples})...")
-    ds = load_dataset("allenai/tulu-3-sft-mixture", split="train")
+    ds = load_dataset("allenai/tulu-3-sft-mixture", split="train", streaming=True)
 
     target_source = "ai2-adapt-dev/personahub_ifdata_manual_seed_v3_29980"
     conversations = []
