@@ -69,13 +69,35 @@ DEFAULT_DATASETS = {
 # ---------------------------------------------------------------------------
 
 def _extract_number(text: str) -> Optional[str]:
+    """Extract a numeric answer from a model response.
+
+    Order of precedence (most specific first):
+      1. \\boxed{...}
+      2. #### N     (GSM8K canonical)
+      3. Phrases like "answer is N", "answer: N", "final answer: N"
+      4. Truncate at chat-leak markers ("Question:", "System:", "User:", etc.)
+         then take the last number in the first paragraph.
+    """
     m = re.search(r"\\boxed\{([^{}]*)\}", text)
     if m:
         return m.group(1).strip().replace(",", "")
     m = re.search(r"####\s*([-+]?[0-9][0-9,\.]*)", text)
     if m:
         return m.group(1).replace(",", "").strip()
-    nums = re.findall(r"[-+]?\d+(?:\.\d+)?", text.replace(",", ""))
+    # "answer is X" / "answer: X" / "final answer: X" / "So the answer X"
+    m = re.search(
+        r"(?:final\s+)?answer\s*(?:is|:|=|was)?\s*\$?\s*([-+]?\d[\d,\.]*)",
+        text, re.IGNORECASE,
+    )
+    if m:
+        return m.group(1).replace(",", "").strip().rstrip(".")
+    # Truncate at chat-leak markers so the "last number" fallback doesn't
+    # grab numbers from a subsequent question.
+    truncated = re.split(r"\n\s*(?:Question|System|User|Assistant)\s*:",
+                         text, maxsplit=1)[0]
+    # Also truncate at <|end_of_text|> style tokens
+    truncated = re.split(r"<\|end", truncated, maxsplit=1)[0]
+    nums = re.findall(r"[-+]?\d+(?:\.\d+)?", truncated.replace(",", ""))
     return nums[-1] if nums else None
 
 
