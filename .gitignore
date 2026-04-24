@@ -27,3 +27,7 @@ evaluation/grpo_strong_*_info.json
 
 # Environment variables
 .env
+
+# Local RL / DPO run outputs
+dpo_runs/
+evaluation/inspect-logs/dpo/
