@@ -225,7 +225,14 @@ IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instr
 
 **exp_0418_0440a** (#44) — **Change: RL from #40 (IFEval 46.3%), 30 iters, lr=3e-6.** Pushes GSM8K to 58% while maintaining IFEval at 46.3%. checkpoint: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/sampler_weights/exp_0418_0440_8b_rl_from_40` state: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/weights/exp_0418_0440_8b_rl_from_40_state`
 
-### Best checkpoint (SUBMIT THIS — ALL TARGETS MET ON FULL EVAL):
+### Best checkpoint by highest average (--limit 100):
+- **exp_0428_1311_math_boost** (#55, Llama-3.1-8B, rank=64): **IFEval 66.0%¶, GSM8K 67.0%¶, HumanEval 59.0%¶, Avg 64.0%¶**
+- Checkpoint: `tinker://8774cfca-b90a-56af-b8a2-463d1a233563:train:0/sampler_weights/exp_0428_1311_math_boost`
+- State: `tinker://8774cfca-b90a-56af-b8a2-463d1a233563:train:0/weights/exp_0428_1311_math_boost_state`
+- **All targets exceeded: IFEval ✅ (66.0% > 47.3%), GSM8K ✅ (67.0% > 52.5%), HumanEval ✅ (59.0% > 31.5%)**
+- Pipeline: 8B base → (#46) 2000 SFT → (#51) 3000 SFT + 30k ifdata → (#55) 500 SFT + 10k tulu_math
+
+### Previous best (SUBMIT THIS — ALL TARGETS MET ON FULL EVAL):
 - **exp_0418_2320_sft** (#46, Llama-3.1-8B, rank=64): **IFEval 50.1% strict⁑, GSM8K 53.7%⁑, HumanEval 46.3%⁑**
 - Checkpoint: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/sampler_weights/exp_0418_2320_8b_massive_sft_rank64_steps2000`
 - State: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/weights/exp_0418_2320_8b_massive_sft_rank64_steps2000_state`
@@ -249,6 +256,10 @@ IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instr
 - **exp_0417_0040_8b_s4** (#27, Llama-3.1-8B): IFEval 39.9% strict / 46.1% final, GSM8K 54.4%, HumanEval 45.1% (full eval)
 - Checkpoint: `tinker://dd7fb973-6ac9-51f0-9777-f5a97e8b46a0:train:0/sampler_weights/exp_0417_0040_8b_flan_stage4_tulu90_lr3e5_steps500`
 
+### In progress:
+- **exp_0428_1343_rl_gsm8k** — GSM8K RL (GRPO) from #55, 30 iters, lr=3e-6. Running now (source: L3wel). State when complete will be saved to checkpoint_info.json.
+
 ### Remaining target:
-- **IFEval prompt_strict_acc needs +6.4pp** (40.9% → 47.3%) — this is the only unmet strict target
-- Suggested approaches: RL on 8B, IFEval-specific datasets (WizardLM/Orca), more FLAN data diversity, longer training
+- **All targets exceeded** on --limit 100. Need full eval to confirm.
+- GSM8K RL from #55 may push GSM8K from 67% to 70%+ without hurting IFEval/HumanEval
+- Previous concern: IFEval prompt_strict_acc — now 66% on --limit 100 (well above 47.3% target)
