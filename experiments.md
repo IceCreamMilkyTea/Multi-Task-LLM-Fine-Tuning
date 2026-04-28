@@ -74,6 +74,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 53B | **exp_0422_code_B** | **1500 (resume #51)** | **8** | **3e-5** | **64** | **5k** | **3.5k FLAN+1k aug+10k ifdata** | **5k+30k tulu** | **70.3%§** | **62.0%§** | **48.8%§** | **60.4%§** | **★★★★★ BEST balanced** | JOrG1 |
 | 54 | exp_0422_B_ifeval_grpo | 30 IFEval RL iters (resume #51) | 8 | 3e-6 | 64 | IFEval GRPO | — | — | 69.7%§ | 63.7%§ | 48.8%§ | 60.7%§ | Discard | JOrG1 |
 | 55 | **exp_0428_1311_math_boost** | **500 (resume #51)** | **8** | **2e-5** | **64** | **7469*+10k tulu_math** | **2.5k FLAN+2k aug+10k ifdata** | **8k*** | **66.0%¶** | **67.0%¶** | **59.0%¶** | **64.0%¶** | **★★★★★★ NEW BEST** | L3wel |
+| 56 | exp_0428_1343_rl_gsm8k | 10/30 RL iters (resume #55) | — | 3e-6 | 64 | RL GSM8K | — | — | — | — | — | — | FAILED (API error) | L3wel |
 
 Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 Key for #52: +30k Tulu math + 30k Tulu code, max_length=4096 (math/code diluted IFEval)
@@ -256,8 +257,8 @@ IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instr
 - **exp_0417_0040_8b_s4** (#27, Llama-3.1-8B): IFEval 39.9% strict / 46.1% final, GSM8K 54.4%, HumanEval 45.1% (full eval)
 - Checkpoint: `tinker://dd7fb973-6ac9-51f0-9777-f5a97e8b46a0:train:0/sampler_weights/exp_0417_0040_8b_flan_stage4_tulu90_lr3e5_steps500`
 
-### In progress:
-- **exp_0428_1343_rl_gsm8k** — GSM8K RL (GRPO) from #55, 30 iters, lr=3e-6. Running now (source: L3wel). State when complete will be saved to checkpoint_info.json.
+### Failed:
+- **exp_0428_1343_rl_gsm8k** (#56) — GSM8K RL (GRPO) from #55, 30 iters, lr=3e-6. Failed at iter 10/30 with `tinker.PermissionDeniedError: Container identity unknown`. API session expired. No checkpoint saved. Avg reward over 10 iters: ~0.45 (model gets ~45% of GSM8K problems right). Future sessions can retry RL from #55 state.
 
 ### Remaining target:
 - **All targets exceeded** on --limit 100. Need full eval to confirm.
