@@ -74,6 +74,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 53B | **exp_0422_code_B** | **1500 (resume #51)** | **8** | **3e-5** | **64** | **5k** | **3.5k FLAN+1k aug+10k ifdata** | **5k+30k tulu** | **70.3%§** | **62.0%§** | **48.8%§** | **60.4%§** | **★★★★★ BEST balanced** | JOrG1 |
 | 54 | exp_0422_B_ifeval_grpo | 30 IFEval RL iters (resume #51) | 8 | 3e-6 | 64 | IFEval GRPO | — | — | 69.7%§ | 63.7%§ | 48.8%§ | 60.7%§ | Discard | JOrG1 |
 | 55 | **exp_0512_1311_math** | **1000 (resume #53B)** | **8** | **2e-5** | **64** | **7.5k*** | **4k FLAN+1k aug+10k ifdata** | **3k*+10k tulu math** | **63.0%¶** | **69.0%¶** | **60.0%¶** | **64.0%¶** | **★★★★★★ BEST** | j16B8 |
+| 56 | exp_0512_1350_ifrecov | 500 (resume #55) | 8 | 1e-5 | 64 | 3k* | 6k FLAN+2k aug+20k ifdata | 2k* | 65.0%¶ | 66.0%¶ | 63.0%¶ | 64.7%¶ | Keep | j16B8 |
 
 Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 Key for #52: +30k Tulu math + 30k Tulu code, max_length=4096 (math/code diluted IFEval)
@@ -186,6 +187,8 @@ Key for #54: IFEval constraint RL from #51; failed to improve IFEval (-2pp vs #5
 **exp_0422_code_B** (#53B) ★★★★★ — **Change: same as #53A but lr=3e-5 (lower), β2=0.97 (higher). A/B test on training conservatism.** Result: IFEval 70.3% (vs A's 66.3%), GSM8K 62.0%, HumanEval 48.8% (same as A). **Conservative params win** — lower lr + higher β2 better preserves IFEval while pushing HumanEval equally. Key learning: each successive SFT stage should use progressively lower lr and higher β2. checkpoint: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/sampler_weights/exp_0422_code_sft_B` state: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/weights/exp_0422_code_sft_B_state`
 
 **exp_0512_1311_math** (#55) ★★★★★★ NEW BEST — **Change: resume from #53B (best balanced), math-focused SFT with 10k Tulu math sources + full GSM8K (7.5k), plus 10k personahub_ifdata + 4k FLAN + 1k IFEval augment + 3k OpenCodeInstruct. bsz=8, lr=2e-5, β2=0.97, 1000 steps, max_length=2048.** Key insight: adding Tulu math (personahub_math, gsm8k_50k, numinamath) to code-trained #53B pushes GSM8K massively (+7pp) while HumanEval also improves (+11.2pp — likely from retained code skills + math reasoning transfer). IFEval dropped from 70.3%→63.0% but still well above target. Avg 64.0% — **new best by 3.6pp**. checkpoint: `tinker://52b52be0-5884-501c-8247-6d7666025179:train:0/sampler_weights/exp_0512_1311_math_focus` state: `tinker://52b52be0-5884-501c-8247-6d7666025179:train:0/weights/exp_0512_1311_math_focus_state`
+
+**exp_0512_1350_ifrecov** (#56) — **Change: resume from #55 (math-focused), IFEval recovery stage with 20k personahub_ifdata + 6k FLAN + 2k IFEval augment, lr=1e-5 (very low), β2=0.97, 500 steps.** Goal: recover IFEval lost from 70.3%→63.0% while maintaining math/code gains. Result: IFEval 65.0% (+2pp), HumanEval 63.0% (+3pp), GSM8K 66.0% (-3pp). Average 64.7% (+0.7pp). All differences within --limit 100 noise (~5pp stderr). Low LR preserves math/code while ifdata pushes IFEval. checkpoint: `tinker://46757fd8-6a96-5cd9-a224-2551f269e935:train:0/sampler_weights/exp_0512_1350_ifeval_recovery` state: `tinker://46757fd8-6a96-5cd9-a224-2551f269e935:train:0/weights/exp_0512_1350_ifeval_recovery_state`
 
 ## Analysis
 
