@@ -17,6 +17,7 @@ Usage:
 import argparse
 import ast
 import json
+import math
 import os
 import random
 import re
@@ -624,6 +625,8 @@ def main():
     parser.add_argument("--model", type=str, default=MODEL_3B,
                         choices=[MODEL_3B, MODEL_8B],
                         help="Base model: 3B (default) or 8B (for final runs)")
+    parser.add_argument("--cosine_lr", action="store_true",
+                        help="Use cosine LR decay schedule (lr decays from --lr to 0)")
     args = parser.parse_args()
 
     # Override MODEL if specified
@@ -759,10 +762,16 @@ def main():
     print("  Training client ready")
 
     # Train
+    lr_schedule = "cosine" if args.cosine_lr else "constant"
     adam_params = types.AdamParams(learning_rate=args.lr, beta1=0.9, beta2=args.beta2, eps=1e-8)
-    print(f"\nTraining for {args.num_steps} steps (batch_size={args.batch_size}, lr={args.lr}, beta2={args.beta2})...")
+    print(f"\nTraining for {args.num_steps} steps (batch_size={args.batch_size}, lr={args.lr}, beta2={args.beta2}, schedule={lr_schedule})...")
 
     for step in range(args.num_steps):
+        if args.cosine_lr:
+            progress = step / max(args.num_steps, 1)
+            current_lr = args.lr * 0.5 * (1 + math.cos(math.pi * progress))
+            adam_params = types.AdamParams(learning_rate=current_lr, beta1=0.9, beta2=args.beta2, eps=1e-8)
+
         # Sample a random batch from all_data
         batch = [all_data[i % len(all_data)] for i in
                  random.sample(range(len(all_data)), min(args.batch_size, len(all_data)))]
@@ -779,7 +788,8 @@ def main():
         loss = -np.dot(logprobs, weights) / max(weights.sum(), 1)
 
         if (step + 1) % 10 == 0 or step == 0:
-            print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}")
+            lr_str = f" | LR: {current_lr:.2e}" if args.cosine_lr else ""
+            print(f"  Step {step+1}/{args.num_steps} | Loss: {loss:.4f}{lr_str}")
 
         # Intermediate checkpoint saving
         if args.save_every > 0 and (step + 1) % args.save_every == 0 and (step + 1) < args.num_steps:

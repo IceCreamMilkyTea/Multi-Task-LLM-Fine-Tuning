@@ -1,6 +1,6 @@
 {
-  "checkpoint_path": "tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/sampler_weights/exp_0519_1310_strict_code",
-  "state_path": "tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/weights/exp_0519_1310_strict_code_state",
+  "checkpoint_path": "tinker://6ca8d779-fde1-5f39-95a2-9902b3df9616:train:0/sampler_weights/exp_0519_1347_cosine_code",
+  "state_path": "tinker://6ca8d779-fde1-5f39-95a2-9902b3df9616:train:0/weights/exp_0519_1347_cosine_code_state",
   "base_model": "meta-llama/Llama-3.1-8B",
   "renderer_name": "role_colon",
   "training": {

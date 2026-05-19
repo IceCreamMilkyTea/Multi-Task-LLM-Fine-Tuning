@@ -74,6 +74,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 53B | **exp_0422_code_B** | **1500 (resume #51)** | **8** | **3e-5** | **64** | **5k** | **3.5k FLAN+1k aug+10k ifdata** | **5k+30k tulu** | **70.3%§** | **62.0%§** | **48.8%§** | **60.4%§** | **★★★★★ BEST balanced** | JOrG1 |
 | 54 | exp_0422_B_ifeval_grpo | 30 IFEval RL iters (resume #51) | 8 | 3e-6 | 64 | IFEval GRPO | — | — | 69.7%§ | 63.7%§ | 48.8%§ | 60.7%§ | Discard | JOrG1 |
 | 55 | **exp_0519_1310_strict_code** | **500 (resume #53B)** | **8** | **2e-5** | **64** | **3k** | **3.5k FLAN+2k aug** | **13k strict** | **70.0%¶** | **63.0%¶** | **63.0%¶** | **65.3%¶** | **★★★★★★ NEW BEST** | 9YFvg |
+| 56 | exp_0519_1347_cosine_code | 500 (resume #53B) | 8 | 2e-5→0 cosine | 64 | 3k | 3.5k FLAN+2k aug | 13k strict | 66.0%¶ | 69.0%¶ | 62.0%¶ | 65.7%¶ | Keep | 9YFvg |
 
 Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 Key for #52: +30k Tulu math + 30k Tulu code, max_length=4096 (math/code diluted IFEval)
@@ -186,6 +187,8 @@ Key for #54: IFEval constraint RL from #51; failed to improve IFEval (-2pp vs #5
 **exp_0422_code_B** (#53B) ★★★★★ — **Change: same as #53A but lr=3e-5 (lower), β2=0.97 (higher). A/B test on training conservatism.** Result: IFEval 70.3% (vs A's 66.3%), GSM8K 62.0%, HumanEval 48.8% (same as A). **Conservative params win** — lower lr + higher β2 better preserves IFEval while pushing HumanEval equally. Key learning: each successive SFT stage should use progressively lower lr and higher β2. checkpoint: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/sampler_weights/exp_0422_code_sft_B` state: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/weights/exp_0422_code_sft_B_state`
 
 **exp_0519_1310_strict_code** (#55) ★★★★★★ NEW BEST — **Change: resume from #53B, strict code quality filtering: OpenCodeInstruct test_score=1.0 (was ≥0.8) and output <2000 chars (was <4000).** Data: 21.5k total (3k GSM8K + 3.5k FLAN Tulu + 13k strict-filtered code + 2k IFEval augment). The strict filtering keeps only perfect-scoring, concise code examples — aligning training data distribution with HumanEval's short-function format. HumanEval jumped from 48.8% to **63.0%** (+14.2pp!). IFEval maintained at 70.0%, GSM8K 63.0%. Avg **65.3%** (+4.9pp). Loss: 0.16→0.28 (stable). checkpoint: `tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/sampler_weights/exp_0519_1310_strict_code` state: `tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/weights/exp_0519_1310_strict_code_state`
+
+**exp_0519_1347_cosine_code** (#56) — **Change: same as #55 but with cosine LR schedule (lr decays from 2e-5 to ~0 over 500 steps). A/B test: cosine vs constant LR.** Result: IFEval 66.0% (-4pp vs #55), GSM8K 69.0% (+6pp), HumanEval 62.0% (-1pp). Cosine LR trades IFEval for better GSM8K. Average 65.7% (slightly higher than #55's 65.3%, within noise). Key finding: cosine LR helps math by preventing overtraining in later steps, but the reduced late-stage learning slightly hurts instruction following. Both within --limit 100 noise. checkpoint: `tinker://6ca8d779-fde1-5f39-95a2-9902b3df9616:train:0/sampler_weights/exp_0519_1347_cosine_code` state: `tinker://6ca8d779-fde1-5f39-95a2-9902b3df9616:train:0/weights/exp_0519_1347_cosine_code_state`
 
 ## Analysis
 
