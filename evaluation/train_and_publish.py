@@ -497,10 +497,10 @@ def load_code_conversations(num_samples=5000, filter_quality=False):
                 test_score = float(test_score_raw) if test_score_raw else 0.0
             except (ValueError, TypeError):
                 test_score = 0.0
-            if test_score < 0.8:
+            if test_score < 1.0:
                 continue
-            # Also length filter: not too short, not too long
-            if len(output_text) < 50 or len(output_text) > 4000:
+            # Length filter: short, function-focused code (like HumanEval)
+            if len(output_text) < 50 or len(output_text) > 2000:
                 continue
 
         conversations.append([

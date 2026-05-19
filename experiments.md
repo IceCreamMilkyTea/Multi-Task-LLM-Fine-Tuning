@@ -73,6 +73,7 @@ All experiments use base model `meta-llama/Llama-3.2-3B`, data mix of GSM8K + Tu
 | 53A | exp_0422_code_A | 1500 (resume #51) | 8 | 5e-5 | 64 | 5k | 3.5k FLAN+1k aug+10k ifdata | 5k+30k tulu | 66.3%§ | 66.3%§ | 48.8%§ | 60.5%§ | Keep | JOrG1 |
 | 53B | **exp_0422_code_B** | **1500 (resume #51)** | **8** | **3e-5** | **64** | **5k** | **3.5k FLAN+1k aug+10k ifdata** | **5k+30k tulu** | **70.3%§** | **62.0%§** | **48.8%§** | **60.4%§** | **★★★★★ BEST balanced** | JOrG1 |
 | 54 | exp_0422_B_ifeval_grpo | 30 IFEval RL iters (resume #51) | 8 | 3e-6 | 64 | IFEval GRPO | — | — | 69.7%§ | 63.7%§ | 48.8%§ | 60.7%§ | Discard | JOrG1 |
+| 55 | **exp_0519_1310_strict_code** | **500 (resume #53B)** | **8** | **2e-5** | **64** | **3k** | **3.5k FLAN+2k aug** | **13k strict** | **70.0%¶** | **63.0%¶** | **63.0%¶** | **65.3%¶** | **★★★★★★ NEW BEST** | 9YFvg |
 
 Key for #51: **+30k personahub_ifdata** (IFEval-specific from Tulu-3), β2=0.96
 Key for #52: +30k Tulu math + 30k Tulu code, max_length=4096 (math/code diluted IFEval)
@@ -184,6 +185,8 @@ Key for #54: IFEval constraint RL from #51; failed to improve IFEval (-2pp vs #5
 
 **exp_0422_code_B** (#53B) ★★★★★ — **Change: same as #53A but lr=3e-5 (lower), β2=0.97 (higher). A/B test on training conservatism.** Result: IFEval 70.3% (vs A's 66.3%), GSM8K 62.0%, HumanEval 48.8% (same as A). **Conservative params win** — lower lr + higher β2 better preserves IFEval while pushing HumanEval equally. Key learning: each successive SFT stage should use progressively lower lr and higher β2. checkpoint: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/sampler_weights/exp_0422_code_sft_B` state: `tinker://a400eb14-37b1-54d7-a0e9-cd28ebf8fc1e:train:0/weights/exp_0422_code_sft_B_state`
 
+**exp_0519_1310_strict_code** (#55) ★★★★★★ NEW BEST — **Change: resume from #53B, strict code quality filtering: OpenCodeInstruct test_score=1.0 (was ≥0.8) and output <2000 chars (was <4000).** Data: 21.5k total (3k GSM8K + 3.5k FLAN Tulu + 13k strict-filtered code + 2k IFEval augment). The strict filtering keeps only perfect-scoring, concise code examples — aligning training data distribution with HumanEval's short-function format. HumanEval jumped from 48.8% to **63.0%** (+14.2pp!). IFEval maintained at 70.0%, GSM8K 63.0%. Avg **65.3%** (+4.9pp). Loss: 0.16→0.28 (stable). checkpoint: `tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/sampler_weights/exp_0519_1310_strict_code` state: `tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/weights/exp_0519_1310_strict_code_state`
+
 ## Analysis
 
 **exp_0418_2320_rl** (#45) — **Change: IFEval constraint RL with fixed reward-centered advantages. 30 iters, 8 samples/prompt, 8 prompts/iter, lr=5e-6. Programmatic reward: check if model output satisfies formatting constraints (all caps, bullet points, paragraphs, etc.).** Fix worked (Datums=64 every iter, previously 0). But IFEval strict dropped to 42.7% (-3.6pp vs #43). Binary constraint reward too noisy; RL hurts instruction following. HumanEval improved to 48.2%. checkpoint: `tinker://0234eefa-a51e-597d-b462-1fa2dc4b62e1:train:0/sampler_weights/exp_0418_2320_8b_ifeval_rl_fixed`
@@ -221,12 +224,17 @@ IFEval reports multiple metrics. `prompt_strict_acc` is the strictest (all instr
 
 **exp_0418_0440a** (#44) — **Change: RL from #40 (IFEval 46.3%), 30 iters, lr=3e-6.** Pushes GSM8K to 58% while maintaining IFEval at 46.3%. checkpoint: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/sampler_weights/exp_0418_0440_8b_rl_from_40` state: `tinker://2824e2de-d2c2-570f-8331-5778a1d9d38c:train:0/weights/exp_0418_0440_8b_rl_from_40_state`
 
-### Best checkpoint (SUBMIT THIS — ALL TARGETS MET ON FULL EVAL):
+### Best checkpoint (SUBMIT THIS — HIGHEST AVERAGE):
+- **exp_0519_1310_strict_code** (#55, Llama-3.1-8B, rank=64): **IFEval 70.0%¶, GSM8K 63.0%¶, HumanEval 63.0%¶, Avg 65.3%**
+- Checkpoint: `tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/sampler_weights/exp_0519_1310_strict_code`
+- State: `tinker://fd5a1d70-e3be-532e-ac90-1aac707f6868:train:0/weights/exp_0519_1310_strict_code_state`
+- **IFEval ✅ (70.0% > 47.3%), GSM8K ✅ (63.0% > 52.5%), HumanEval ✅ (63.0% > 31.5%)**
+- Pipeline: 8B base → 2000 SFT rank=64 (#46) → 3000 ifdata (#51) → 1500 code (#53B) → 500 strict-code (#55)
+- Key change: strict code quality filtering (test_score=1.0, output<2000 chars)
+
+### Previous best checkpoint:
 - **exp_0418_2320_sft** (#46, Llama-3.1-8B, rank=64): **IFEval 50.1% strict⁑, GSM8K 53.7%⁑, HumanEval 46.3%⁑**
 - Checkpoint: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/sampler_weights/exp_0418_2320_8b_massive_sft_rank64_steps2000`
-- State: `tinker://54fae56e-2ba1-53a2-83ee-4c5746e05453:train:0/weights/exp_0418_2320_8b_massive_sft_rank64_steps2000_state`
-- **IFEval ✅ (50.1% > 47.3%), GSM8K ✅ (53.7% > 52.5%), HumanEval ✅ (46.3% > 31.5%)**
-- Pipeline: 8B base → 2000 SFT steps (rank=64, 37k data: FLAN+GSM8K+Code+IFEval augment, max_length=2048)
 
 ### Previous best checkpoints:
 
